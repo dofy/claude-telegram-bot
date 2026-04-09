@@ -110,6 +110,12 @@ def _is_authenticated() -> bool:
 def _apply_theme():
     ui.dark_mode(True)
     ui.colors(primary="#dc2626")
+    ui.add_head_html(
+        '<link rel="stylesheet" href='
+        '"https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">'
+        '<script src='
+        '"https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>'
+    )
 
 
 # ── Login page ────────────────────────────────────────────────────────────────
@@ -605,7 +611,7 @@ def _build_help_panel():
 
     # ── Manual start ─────────────────────────────────────────────────────
     ui.label("Manual Start").classes("text-sm font-semibold mt-6 mb-2")
-    _code_block(f"cd {BASE_DIR}\n{uv_path} run bot.py")
+    _code_block(f"cd {BASE_DIR}\n{uv_path} run bot.py", lang="bash")
 
     # ── launchd commands ─────────────────────────────────────────────────
     label_name = "xyz.phpz.claude-telegram-bot"
@@ -650,7 +656,7 @@ def _build_help_panel():
 
     if plist_path.exists():
         plist_content = plist_path.read_text(encoding="utf-8", errors="replace")
-        _code_block(plist_content)
+        _code_block(plist_content, lang="xml")
     else:
         ui.label("No plist found at this path.").classes(
             "text-xs text-gray-500 italic"
@@ -660,19 +666,22 @@ def _build_help_panel():
         _code_block(
             f"cp {example} {plist_path}\n"
             f"# Edit paths in the plist, then:\n"
-            f"launchctl load {plist_path}"
+            f"launchctl load {plist_path}",
+            lang="bash",
         )
 
 
-def _code_block(text: str):
-    """Render a copyable monospace code block."""
+def _code_block(text: str, lang: str = ""):
+    """Render a copyable code block with syntax highlighting."""
     escaped = html_mod.escape(text)
-    with ui.card().classes("w-full bg-zinc-900 p-0").props("flat bordered"):
+    lang_cls = f"language-{lang}" if lang else ""
+    with ui.card().classes("w-full p-0").props("flat bordered"):
         with ui.row().classes("w-full items-start"):
-            ui.html(
-                f"<pre style='margin:0;padding:12px;overflow-x:auto;"
-                f"font-size:12px;line-height:1.5;white-space:pre-wrap;"
-                f"word-break:break-all;flex:1'>{escaped}</pre>"
+            el = ui.html(
+                f"<pre style='margin:0;overflow-x:auto;flex:1'>"
+                f"<code class='hljs {lang_cls}' style='font-size:12px;"
+                f"line-height:1.5;white-space:pre;padding:12px;display:block'>"
+                f"{escaped}</code></pre>"
             ).classes("flex-grow")
 
             def _copy(t=text):
@@ -684,6 +693,8 @@ def _code_block(text: str):
             ui.button(icon="content_copy", on_click=_copy).props(
                 "flat dense round size=sm color=grey"
             ).classes("mt-1 mr-1").tooltip("Copy all")
+
+    ui.run_javascript("hljs.highlightAll()")
 
 
 # ── Plugin class ──────────────────────────────────────────────────────────────
