@@ -2,6 +2,9 @@
 
 import logging
 import os
+import platform
+import shutil
+import sys
 import time
 import threading
 from collections import defaultdict
@@ -170,6 +173,7 @@ def admin_page(request: Request) -> RedirectResponse | None:
         ("log", "Log", "tune"),
         ("plugins", "Plugins", "extension"),
         ("logs", "Logs", "terminal"),
+        ("help", "Help", "help_outline"),
     ]
     _TAB_BUILDERS = {
         "secrets": _build_secrets_panel,
@@ -179,6 +183,7 @@ def admin_page(request: Request) -> RedirectResponse | None:
         "log": _build_log_panel,
         "plugins": _build_plugins_panel,
         "logs": _build_logs_panel,
+        "help": _build_help_panel,
     }
 
     active_tab = request.query_params.get("tab", "secrets")
@@ -571,6 +576,109 @@ def _build_logs_panel():
         "flat color=primary"
     )
     refresh()
+
+
+def _build_help_panel():
+    from ..app import __version__
+
+    _section_header("help_outline", "Help & Quick Reference")
+
+    # ── Runtime info ─────────────────────────────────────────────────────
+    uv_path = shutil.which("uv") or "/opt/homebrew/bin/uv"
+    python_ver = platform.python_version()
+    os_info = f"{platform.system()} {platform.release()}"
+
+    with ui.card().classes("w-full").props("flat bordered"):
+        ui.label("Runtime Environment").classes("text-sm font-semibold mb-2")
+        rows = [
+            ("Version", __version__),
+            ("Python", f"{python_ver} ({sys.executable})"),
+            ("uv", uv_path),
+            ("OS", os_info),
+            ("Base Dir", str(BASE_DIR)),
+        ]
+        for label, val in rows:
+            with ui.row().classes("w-full items-start py-1 px-2"):
+                ui.label(label).classes("w-28 text-xs text-gray-400 shrink-0")
+                ui.label(val).classes("text-xs font-mono break-all")
+
+    # ── Manual start ─────────────────────────────────────────────────────
+    ui.label("Manual Start").classes("text-sm font-semibold mt-6 mb-2")
+    _code_block(f"cd {BASE_DIR}\n{uv_path} run bot.py")
+
+    # ── launchd commands ─────────────────────────────────────────────────
+    label_name = "com.seven.claude-telegram-bot"
+    home = Path.home()
+    plist_path = home / "Library" / "LaunchAgents" / f"{label_name}.plist"
+
+    ui.label("Daemon Management (launchd)").classes(
+        "text-sm font-semibold mt-6 mb-2"
+    )
+
+    cmds = [
+        ("Start", f"launchctl start {label_name}"),
+        ("Stop", f"launchctl stop {label_name}"),
+        ("Restart", f"launchctl stop {label_name} && sleep 2 && launchctl start {label_name}"),
+        ("Load (enable)", f"launchctl load {plist_path}"),
+        ("Unload (disable)", f"launchctl unload {plist_path}"),
+        ("Check status", f"launchctl list | grep {label_name}"),
+    ]
+    for title, cmd in cmds:
+        with ui.row().classes("w-full items-center gap-3 mb-1"):
+            ui.label(title).classes("w-32 text-xs text-gray-400 shrink-0")
+            code = ui.label(cmd).classes(
+                "text-xs font-mono bg-zinc-800 px-3 py-1.5 rounded flex-grow"
+            )
+
+            def _copy(text=cmd):
+                ui.run_javascript(
+                    f"navigator.clipboard.writeText({text!r})"
+                )
+                ui.notify("Copied", type="positive", position="bottom", timeout=1000)
+
+            ui.button(icon="content_copy", on_click=_copy).props(
+                "flat dense round size=xs"
+            ).tooltip("Copy")
+
+    # ── plist content ────────────────────────────────────────────────────
+    ui.label("Current plist File").classes("text-sm font-semibold mt-6 mb-1")
+    ui.label(str(plist_path)).classes("text-xs text-gray-500 mb-2 font-mono")
+
+    if plist_path.exists():
+        plist_content = plist_path.read_text(encoding="utf-8", errors="replace")
+        _code_block(plist_content)
+    else:
+        ui.label("No plist found at this path.").classes(
+            "text-xs text-gray-500 italic"
+        )
+        ui.label("Install with:").classes("text-xs text-gray-400 mt-1")
+        example = BASE_DIR / f"{label_name}.plist.example"
+        _code_block(
+            f"cp {example} {plist_path}\n"
+            f"# Edit paths in the plist, then:\n"
+            f"launchctl load {plist_path}"
+        )
+
+
+def _code_block(text: str):
+    """Render a copyable monospace code block."""
+    with ui.card().classes("w-full bg-zinc-900 p-0").props("flat bordered"):
+        with ui.row().classes("w-full items-start"):
+            ui.html(
+                f"<pre style='margin:0;padding:12px;overflow-x:auto;"
+                f"font-size:12px;line-height:1.5;white-space:pre-wrap;"
+                f"word-break:break-all;flex:1'>{text}</pre>"
+            ).classes("flex-grow")
+
+            def _copy(t=text):
+                ui.run_javascript(
+                    f"navigator.clipboard.writeText({t!r})"
+                )
+                ui.notify("Copied", type="positive", position="bottom", timeout=1000)
+
+            ui.button(icon="content_copy", on_click=_copy).props(
+                "flat dense round size=sm color=grey"
+            ).classes("mt-1 mr-1").tooltip("Copy all")
 
 
 # ── Plugin class ──────────────────────────────────────────────────────────────
