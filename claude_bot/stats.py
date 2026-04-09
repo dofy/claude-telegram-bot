@@ -7,7 +7,8 @@ from pathlib import Path
 
 from .config import BASE_DIR
 
-_STATS_PATH = BASE_DIR / "stats.json"
+_STATS_DIR = BASE_DIR / "logs"
+_STATS_PATH = _STATS_DIR / "stats.json"
 
 
 class Stats:
@@ -28,6 +29,7 @@ class Stats:
 
     def _save(self):
         try:
+            _STATS_DIR.mkdir(parents=True, exist_ok=True)
             _STATS_PATH.write_text(json.dumps(self._data, indent=2))
         except OSError:
             pass
