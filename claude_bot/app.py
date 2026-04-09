@@ -23,7 +23,7 @@ def _banner(log: logging.Logger) -> None:
     admin_port = admin_cfg.get("port", 8080)
 
     admin_url = "http://127.0.0.1:{}".format(admin_port) if admin_enabled else None
-    auth_mode = "token" if cfg.admin_token else "open"
+    auth_mode = cfg.admin_token if cfg.admin_token else "open (no ADMIN_TOKEN)"
 
     lines = [
         "",
@@ -47,12 +47,15 @@ def _banner(log: logging.Logger) -> None:
     ]
 
     if admin_url:
+        line1 = f"  ✦ Admin Panel: {admin_url}"
+        line2 = f"    Auth: {auth_mode}"
+        width = max(len(line1), len(line2)) + 4
         lines += [
             "",
-            "  ┌──────────────────────────────────────────┐",
-            "  │  ✦ Admin Panel: {:<25s}│".format(admin_url),
-            "  │    Auth: {:<33s}│".format(auth_mode),
-            "  └──────────────────────────────────────────┘",
+            "  ┌" + "─" * width + "┐",
+            "  │" + line1.ljust(width) + "│",
+            "  │" + line2.ljust(width) + "│",
+            "  └" + "─" * width + "┘",
         ]
     else:
         lines += [
