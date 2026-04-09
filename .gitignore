@@ -1,0 +1,6 @@
+.env
+inbox/
+.offset
+*.pyc
+__pycache__/
+*.log
