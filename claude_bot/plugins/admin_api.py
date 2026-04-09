@@ -647,12 +647,14 @@ def _build_help_panel():
     ).classes("text-xs text-gray-500 mt-2 mb-1")
     _code_block(
         f"cd {BASE_DIR}\n"
-        f"{uvicorn_path} nicegui.ui:app --host 127.0.0.1 --port {admin_port}",
+        f"{uv_path} run uvicorn nicegui.ui:app --host 127.0.0.1 --port {admin_port}",
         lang="bash",
     )
     ui.label(
-        "Note: The admin panel is tightly coupled with the bot. "
-        "Use 'uv run bot.py' for normal operation."
+        "Note: uvicorn is installed in .venv (NiceGUI dependency). "
+        "Use 'uv run' prefix to access it. "
+        "The admin panel is tightly coupled with the bot — "
+        "use 'uv run bot.py' for normal operation."
     ).classes("text-xs text-gray-500 mt-1")
 
     # ── launchd commands ─────────────────────────────────────────────────
