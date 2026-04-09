@@ -68,12 +68,12 @@ cp config.json.example config.json
 | ------------------- | ------------------------------------------------------------------ |
 | `acl`               | `owner_chat_id`, `allowed_group_ids`                               |
 | `log`               | `dir`, `rotation` (daily/weekly), `keep_days`, `level`             |
-| `thinking_messages` | Array of random status messages                                    |
+| `thinking_messages` | Array of `{text, enabled}` objects, individually toggleable        |
 | `plugins`           | Plugin enable/disable and per-plugin config                        |
 | `claude`            | `dangerously_skip_permissions`, `max_retries`, `session_ttl_hours` |
 | `inbox`             | `max_age_hours` (auto-delete downloaded media, default 72)         |
 
-> You can also manage config via the **Admin Web Panel** at `http://127.0.0.1:8080`.
+> You can also manage config via the **Admin Web Panel** (default `http://127.0.0.1:8080`, port configurable in `plugins.admin_api.port`).
 
 ## Running
 
@@ -91,11 +91,13 @@ cp xyz.phpz.claude-telegram-bot.plist.example ~/Library/LaunchAgents/xyz.phpz.cl
 launchctl load ~/Library/LaunchAgents/xyz.phpz.claude-telegram-bot.plist
 ```
 
-To stop:
+To stop (fully unload, prevents KeepAlive auto-restart):
 
 ```bash
 launchctl unload ~/Library/LaunchAgents/xyz.phpz.claude-telegram-bot.plist
 ```
+
+> **Note:** `launchctl stop` only kills the process — KeepAlive will immediately restart it. Use `unload` to truly stop, `load` to start again.
 
 ## Project Structure
 

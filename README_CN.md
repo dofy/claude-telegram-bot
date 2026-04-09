@@ -68,12 +68,12 @@ cp config.json.example config.json
 | ------------------- | ------------------------------------------------------------------ |
 | `acl`               | `owner_chat_id`、`allowed_group_ids`                               |
 | `log`               | `dir`、`rotation`（daily/weekly）、`keep_days`、`level`            |
-| `thinking_messages` | 随机状态消息数组                                                   |
+| `thinking_messages` | `{text, enabled}` 对象数组，支持单条启用/禁用                      |
 | `plugins`           | 插件启用/禁用及单独配置                                            |
 | `claude`            | `dangerously_skip_permissions`、`max_retries`、`session_ttl_hours` |
 | `inbox`             | `max_age_hours`（自动删除下载的媒体，默认 72 小时）                |
 
-> 也可以通过 **管理面板** `http://127.0.0.1:8080` 管理配置。
+> 也可以通过 **管理面板** 管理配置（默认 `http://127.0.0.1:8080`，端口可在 `plugins.admin_api.port` 中配置）。
 
 ## 运行
 
@@ -91,11 +91,13 @@ cp xyz.phpz.claude-telegram-bot.plist.example ~/Library/LaunchAgents/xyz.phpz.cl
 launchctl load ~/Library/LaunchAgents/xyz.phpz.claude-telegram-bot.plist
 ```
 
-停止：
+停止（完全卸载，防止 KeepAlive 自动重启）：
 
 ```bash
 launchctl unload ~/Library/LaunchAgents/xyz.phpz.claude-telegram-bot.plist
 ```
+
+> **注意：** `launchctl stop` 只是杀掉进程，KeepAlive 会立即重启。要真正停止请用 `unload`，恢复启动用 `load`。
 
 ## 项目结构
 
