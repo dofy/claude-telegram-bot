@@ -325,21 +325,100 @@ def _build_acl_panel():
 
 
 def _build_thinking_panel():
-    _section_header("chat", "Thinking Messages")
-    ui.label("One per line. Bot picks randomly while processing.").classes(
-        "text-xs text-gray-500 -mt-2"
-    )
+    msgs: list[str] = list(cfg.thinking_messages)
+    container = ui.column().classes("w-full gap-2")
+    count_label: list[ui.label] = []
 
-    area = ui.textarea(
-        value="\n".join(cfg.thinking_messages),
-    ).classes("w-full").props("rows=16")
-
-    def save():
-        msgs = [m for m in area.value.split("\n") if m.strip()]
+    def _persist():
         cfg.set_value(["thinking_messages"], msgs)
-        ui.notify("Thinking messages saved", type="positive")
 
-    ui.button("Save", icon="save", on_click=save).props("color=primary")
+    def _update_count():
+        if count_label:
+            count_label[0].text = f"{len(msgs)} messages"
+
+    def render():
+        container.clear()
+        with container:
+            with ui.row().classes("w-full items-center mb-2"):
+                ui.icon("chat", color="red", size="24px")
+                ui.label("Thinking Messages").classes("text-lg font-semibold")
+                ui.space()
+                lbl = ui.label(f"{len(msgs)} messages").classes(
+                    "text-xs text-gray-500"
+                )
+                count_label.clear()
+                count_label.append(lbl)
+
+            ui.label(
+                "Bot picks one randomly while processing a request."
+            ).classes("text-xs text-gray-500 -mt-2 mb-2")
+
+            for idx, msg in enumerate(msgs):
+
+                def _make_row(i: int, text: str):
+                    with ui.card().classes(
+                        "w-full p-2"
+                    ).props("flat bordered"):
+                        with ui.row().classes("w-full items-center gap-2"):
+                            ui.label(f"#{i + 1}").classes(
+                                "text-xs text-gray-600 w-8 shrink-0"
+                            )
+                            inp = ui.input(value=text).classes(
+                                "flex-grow"
+                            ).props('dense borderless')
+
+                            def do_save(input_el=inp, index=i):
+                                v = input_el.value.strip()
+                                if not v:
+                                    ui.notify(
+                                        "Empty — use delete instead",
+                                        type="warning",
+                                    )
+                                    return
+                                msgs[index] = v
+                                _persist()
+                                ui.notify("Saved", type="positive")
+
+                            def do_delete(index=i):
+                                msgs.pop(index)
+                                _persist()
+                                render()
+                                ui.notify("Deleted", type="info")
+
+                            ui.button(
+                                icon="save", on_click=do_save
+                            ).props("flat dense round size=sm color=primary")
+                            ui.button(
+                                icon="delete", on_click=do_delete
+                            ).props("flat dense round size=sm color=negative")
+
+                _make_row(idx, msg)
+
+            # Add new message
+            with ui.card().classes("w-full p-2").props("flat bordered"):
+                with ui.row().classes("w-full items-center gap-2"):
+                    ui.icon("add", color="grey", size="20px").classes(
+                        "w-8 shrink-0"
+                    )
+                    new_input = ui.input(
+                        placeholder="Add new thinking message..."
+                    ).classes("flex-grow").props('dense borderless')
+
+                    def do_add():
+                        v = new_input.value.strip()
+                        if not v:
+                            ui.notify("Enter a message first", type="warning")
+                            return
+                        msgs.append(v)
+                        _persist()
+                        render()
+                        ui.notify("Added", type="positive")
+
+                    ui.button(
+                        icon="add_circle", on_click=do_add
+                    ).props("flat dense round size=sm color=primary")
+
+    render()
 
 
 def _build_claude_panel():
