@@ -22,36 +22,45 @@ def _banner(log: logging.Logger) -> None:
     admin_enabled = admin_cfg.get("enabled", True)
     admin_port = admin_cfg.get("port", 8080)
 
+    admin_url = "http://127.0.0.1:{}".format(admin_port) if admin_enabled else None
+    auth_mode = "token" if cfg.admin_token else "open"
+
     lines = [
         "",
-        "╔══════════════════════════════════════════╗",
-        "║        Claude Telegram Bot v{}        ║".format(__version__),
-        "╚══════════════════════════════════════════╝",
+        "╔══════════════════════════════════════════════╗",
+        "║         🤖 Claude Telegram Bot v{}         ║".format(__version__),
+        "╚══════════════════════════════════════════════╝",
         "",
-        "  Configuration",
-        "  ├─ Owner Chat ID :  {}".format(cfg.owner_chat_id or "(not set)"),
-        "  ├─ Allowed Groups:  {}".format(
+        "  Config",
+        "  ├─ Owner    :  {}".format(cfg.owner_chat_id or "(not set)"),
+        "  ├─ Groups   :  {}".format(
             ", ".join(str(g) for g in cfg.allowed_group_ids) or "(none)"
         ),
-        "  ├─ Session TTL   :  {}h".format(cfg.session_ttl_hours),
-        "  ├─ Max Retries   :  {}".format(cfg.claude_max_retries),
-        "  └─ Inbox Cleanup :  {}h".format(cfg.inbox_max_age_hours),
-        "",
-        "  Services",
-        "  ├─ Telegram Bot  :  polling",
-        "  ├─ Admin Panel   :  {}".format(
-            "http://127.0.0.1:{}".format(admin_port) if admin_enabled else "disabled"
-        ),
-        "  └─ Auth          :  {}".format(
-            "token required" if cfg.admin_token else "open (no ADMIN_TOKEN)"
-        ),
+        "  ├─ TTL      :  {}h".format(cfg.session_ttl_hours),
+        "  ├─ Retries  :  {}".format(cfg.claude_max_retries),
+        "  └─ Cleanup  :  {}h".format(cfg.inbox_max_age_hours),
         "",
         "  Paths",
-        "  ├─ Base Dir      :  {}".format(BASE_DIR),
-        "  ├─ Config        :  {}".format(cfg._path),
-        "  └─ Logs          :  {}".format(cfg.log_dir),
-        "",
+        "  ├─ Base     :  {}".format(BASE_DIR),
+        "  ├─ Config   :  {}".format(cfg._path),
+        "  └─ Logs     :  {}".format(cfg.log_dir),
     ]
+
+    if admin_url:
+        lines += [
+            "",
+            "  ┌──────────────────────────────────────────┐",
+            "  │  ✦ Admin Panel: {:<25s}│".format(admin_url),
+            "  │    Auth: {:<33s}│".format(auth_mode),
+            "  └──────────────────────────────────────────┘",
+        ]
+    else:
+        lines += [
+            "",
+            "  Admin Panel:  disabled",
+        ]
+
+    lines.append("")
     for line in lines:
         log.info(line)
 

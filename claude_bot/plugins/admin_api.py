@@ -110,7 +110,7 @@ def _apply_theme():
 
 # ── Login page ────────────────────────────────────────────────────────────────
 
-@ui.page("/login")
+@ui.page("/login", title="Claude Bot Admin")
 def login_page() -> RedirectResponse | None:
     _apply_theme()
 
@@ -143,7 +143,7 @@ def login_page() -> RedirectResponse | None:
 
 # ── Admin page ────────────────────────────────────────────────────────────────
 
-@ui.page("/")
+@ui.page("/", title="Claude Bot Admin")
 def admin_page() -> RedirectResponse | None:
     if not _is_authenticated():
         return RedirectResponse("/login")
@@ -552,6 +552,8 @@ class AdminApiPlugin(Plugin):
         ui.run(
             port=port,
             host="127.0.0.1",
+            title="Claude Bot Admin",
+            favicon="🤖",
             reload=False,
             show=False,
             storage_secret=cfg.admin_token or "claude-bot-fallback-secret",
