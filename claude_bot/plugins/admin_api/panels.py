@@ -12,7 +12,7 @@ from nicegui import ui
 from ...config import BASE_DIR, cfg
 from ..theme import (
     STAT_UPTIME, STAT_MESSAGES, STAT_CLAUDE, STAT_AVG, STAT_SESSIONS,
-    BADGE_CORE, SWITCH, BTN_PRIMARY, BTN_FLAT_PRIMARY,
+    BADGE_CORE, SWITCH, BTN_PRIMARY, BTN_FLAT_PRIMARY, INPUT_PROPS,
 )
 from . import section_header, code_block, stat_card, mask_value, boot_time
 
@@ -156,12 +156,12 @@ def _build_dashboard_panel():
             ("Admin Port", str(port)),
         ]
         with ui.element("div").classes("w-full").style(
-            "display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:2px 24px"
+            "display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:2px 16px"
         ):
             for label, val in rows:
-                with ui.row().classes("items-center"):
-                    ui.label(label).classes("w-24 text-xs text-gray-400 shrink-0")
-                    ui.label(val).classes("text-xs font-mono truncate")
+                with ui.row().classes("items-center min-w-0"):
+                    ui.label(label).classes("w-20 text-xs text-gray-400 shrink-0")
+                    ui.label(val).classes("text-xs font-mono truncate min-w-0")
 
     # ── All-time stats ────────────────────────────────────────────────────
     with ui.card().classes("w-full mt-4").props("flat bordered"):
@@ -266,7 +266,7 @@ def _build_secrets_panel():
                         placeholder=f"Enter new {_SECRET_LABELS.get(key, key)}",
                         password=pw,
                         password_toggle_button=pw,
-                    ).classes("w-full")
+                    ).props(INPUT_PROPS).classes("w-full")
 
             with ui.row().classes("gap-2"):
 
@@ -306,12 +306,12 @@ def _build_acl_panel():
     owner_input = ui.number(
         label="Owner Chat ID",
         value=cfg.owner_chat_id or None,
-    ).classes("w-full")
+    ).props(INPUT_PROPS).classes("w-full")
 
     groups_area = ui.textarea(
         label="Allowed Group IDs (one per line)",
         value="\n".join(str(g) for g in sorted(cfg.allowed_group_ids)),
-    ).classes("w-full")
+    ).props(INPUT_PROPS).classes("w-full")
 
     def save():
         try:
@@ -347,13 +347,13 @@ def _build_claude_panel():
             value=cfg.claude_max_retries,
             min=0,
             max=5,
-        ).classes("w-40")
+        ).props(INPUT_PROPS).classes("w-40")
 
         session_ttl = ui.number(
             label="Session TTL (hours)",
             value=cfg.session_ttl_hours,
             min=1,
-        ).classes("w-40")
+        ).props(INPUT_PROPS).classes("w-40")
 
     def save():
         cfg.set_value(
@@ -433,24 +433,24 @@ def _build_logs_panel():
         with ui.column().classes("w-full gap-3 pt-2"):
             log_dir = ui.input(
                 label="Directory", value=cfg.log_dir
-            ).classes("w-full")
+            ).props(INPUT_PROPS).classes("w-full")
 
             with ui.row().classes("gap-3 flex-wrap"):
                 rotation = ui.select(
                     label="Rotation",
                     options=["daily", "weekly"],
                     value=cfg.log_rotation,
-                ).classes("w-36")
+                ).props(INPUT_PROPS).classes("w-36")
 
                 keep_days = ui.number(
                     label="Keep Days", value=cfg.log_keep_days
-                ).classes("w-36")
+                ).props(INPUT_PROPS).classes("w-36")
 
                 level = ui.select(
                     label="Level",
                     options=["DEBUG", "INFO", "WARNING", "ERROR"],
                     value=cfg.log_level,
-                ).classes("w-36")
+                ).props(INPUT_PROPS).classes("w-36")
 
             ui.label("Changes require a bot restart.").classes(
                 "text-xs text-gray-500"
@@ -496,13 +496,13 @@ def _build_logs_panel():
             label="Log File",
             options=log_files,
             value=log_files[0] if log_files else "bot.log",
-        ).classes("w-48 min-w-0")
+        ).props(INPUT_PROPS).classes("w-48 min-w-0")
 
         lines_select = ui.select(
             label="Lines",
             options=[100, 200, 300, 500, 1000],
             value=300,
-        ).classes("w-28")
+        ).props(INPUT_PROPS).classes("w-28")
 
         auto_scroll = ui.switch("Auto scroll", value=True).props(SWITCH)
 
@@ -565,9 +565,9 @@ def _build_help_panel():
             ("Admin Auth", cfg.admin_token or "(disabled)"),
         ]
         for label, val in rows:
-            with ui.row().classes("w-full items-start py-1 px-2"):
-                ui.label(label).classes("w-28 text-xs text-gray-400 shrink-0")
-                ui.label(val).classes("text-xs font-mono break-all")
+            with ui.row().classes("w-full items-start py-1 px-2 min-w-0"):
+                ui.label(label).classes("w-20 text-xs text-gray-400 shrink-0")
+                ui.label(val).classes("text-xs font-mono break-all min-w-0")
 
     ui.label("Manual Start (Bot + Admin Panel)").classes(
         "text-sm font-semibold mt-6 mb-2"
@@ -592,13 +592,13 @@ def _build_help_panel():
     ]
     for title, cmd in cmds:
         with ui.row().classes(
-            "w-full items-center gap-2 mb-1 flex-nowrap"
+            "w-full items-center gap-2 mb-1 flex-nowrap min-w-0"
         ):
-            ui.label(title).classes("w-24 text-xs text-gray-400 shrink-0")
+            ui.label(title).classes("w-20 text-xs text-gray-400 shrink-0")
             ui.label(cmd).classes(
-                "text-xs font-mono bg-zinc-800 px-2 py-1.5 rounded "
-                "flex-grow truncate min-w-0"
-            )
+                "text-xs font-mono bg-gray-100 text-gray-800 px-2 py-1.5 rounded "
+                "min-w-0 border border-gray-200"
+            ).style("flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap")
 
             def _copy(text=cmd):
                 ui.run_javascript(

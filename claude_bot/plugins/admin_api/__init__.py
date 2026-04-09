@@ -12,7 +12,11 @@ from starlette.responses import JSONResponse, RedirectResponse
 from telegram.ext import Application
 
 from ..base import Plugin
-from ..theme import ACCENT, ICON_MUTED, SWITCH, LOGIN_ICON_CLS, EXTRA_CSS
+from ..theme import (
+    DARK_MODE, ACCENT, ICON_MUTED, SWITCH, LOGIN_ICON_CLS, EXTRA_CSS,
+    HEADER_CLASSES, HEADER_TITLE_CLS, HLJS_CSS_URL, CODE_BG, CODE_FG,
+    INPUT_PROPS,
+)
 from ...config import cfg
 
 _BOOT_TIME = time.time()
@@ -61,9 +65,11 @@ def code_block(text: str, lang: str = ""):
     with ui.card().classes("w-full p-0 overflow-hidden").props("flat bordered"):
         with ui.row().classes("w-full items-start"):
             ui.html(
-                f"<pre style='margin:0;overflow-x:auto;flex:1;min-width:0'>"
+                f"<pre style='margin:0;overflow-x:auto;flex:1;min-width:0;"
+                f"background:{CODE_BG};border-radius:6px'>"
                 f"<code class='hljs {lang_cls}' style='font-size:11px;"
-                f"line-height:1.5;white-space:pre;padding:12px;display:block'>"
+                f"line-height:1.5;white-space:pre;padding:12px;display:block;"
+                f"background:{CODE_BG};color:{CODE_FG}'>"
                 f"{escaped}</code></pre>"
             ).classes("flex-grow min-w-0")
 
@@ -79,12 +85,18 @@ def code_block(text: str, lang: str = ""):
 
 
 def stat_card(label: str, value: str, icon: str, color: str = "zinc"):
-    with ui.card().classes(
-        f"p-3 bg-{color}-900/20 border border-{color}-800/30"
-    ).props("flat").style("min-width:0"):
+    if DARK_MODE:
+        card_cls = f"p-3 bg-{color}-900/20 border border-{color}-800/30"
+        icon_cls = f"text-{color}-400"
+        lbl_cls = "text-xs text-gray-400 truncate"
+    else:
+        card_cls = f"p-3 bg-{color}-50 border border-{color}-200"
+        icon_cls = f"text-{color}-500"
+        lbl_cls = "text-xs text-gray-500 truncate"
+    with ui.card().classes(card_cls).props("flat").style("min-width:0"):
         with ui.row().classes("items-center gap-1 mb-1"):
-            ui.icon(icon, size="16px").classes(f"text-{color}-400")
-            ui.label(label).classes("text-xs text-gray-400 truncate")
+            ui.icon(icon, size="16px").classes(icon_cls)
+            ui.label(label).classes(lbl_cls)
         ui.label(value).classes("text-lg font-bold")
 
 
@@ -104,11 +116,10 @@ def boot_time() -> float:
 # ── NiceGUI theme helper ─────────────────────────────────────────────────────
 
 def _apply_theme():
-    ui.dark_mode(True)
+    ui.dark_mode(DARK_MODE)
     ui.colors(primary=ACCENT)
     ui.add_head_html(
-        '<link rel="stylesheet" href='
-        '"https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">'
+        f'<link rel="stylesheet" href="{HLJS_CSS_URL}">'
         '<script src='
         '"https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>'
         '<script>'
@@ -154,7 +165,7 @@ def login_page() -> RedirectResponse | None:
             "Admin Token",
             password=True,
             password_toggle_button=True,
-        ).classes("w-full")
+        ).props(INPUT_PROPS).classes("w-full")
 
         def do_login():
             if token_input.value == cfg.admin_token:
@@ -196,11 +207,9 @@ def admin_page(request: Request) -> RedirectResponse | None:
     if active_tab not in tab_builders:
         active_tab = "dashboard"
 
-    with ui.header().classes(
-        "items-center bg-[#18181b] border-b border-zinc-800 px-4"
-    ):
+    with ui.header().classes(HEADER_CLASSES):
         ui.icon("smart_toy", color=ACCENT, size="24px")
-        ui.label("Claude Bot").classes("text-sm font-bold ml-1")
+        ui.label("Claude Bot").classes(HEADER_TITLE_CLS)
         ui.space()
 
         def logout():

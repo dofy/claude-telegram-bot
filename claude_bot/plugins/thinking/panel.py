@@ -3,7 +3,7 @@
 from nicegui import ui
 
 from ...config import cfg
-from ..theme import ICON_MUTED, SWITCH, BTN_FLAT_DANGER
+from ..theme import ICON_MUTED, SWITCH, BTN_FLAT_DANGER, INPUT_PROPS
 
 
 def build_thinking_panel():

@@ -166,13 +166,13 @@ plugin = MyPlugin()
 
 ### 内置插件
 
-| 插件         | 说明                                        |
-| ------------ | ------------------------------------------- |
-| `admin_api`  | Web 管理面板（核心，不可禁用）                |
-| `management` | Owner 命令：/reload, /sessions, /logs 等     |
-| `scheduler`  | 定时任务与提醒（/remind, /tasks）             |
-| `stats`      | 使用统计（/usage）                            |
-| `thinking`   | Claude 处理时的随机状态消息                   |
+| 插件         | 说明                                     |
+| ------------ | ---------------------------------------- |
+| `admin_api`  | Web 管理面板（核心，不可禁用）           |
+| `management` | Owner 命令：/reload, /sessions, /logs 等 |
+| `scheduler`  | 定时任务与提醒（/remind, /tasks）        |
+| `stats`      | 使用统计（/usage）                       |
+| `thinking`   | Claude 处理时的随机状态消息              |
 
 ### UI 主题
 
@@ -180,24 +180,24 @@ plugin = MyPlugin()
 
 ## 命令参考
 
-| 命令                           | 说明                                 |
-| ------------------------------ | ------------------------------------ |
-| `/start`                       | 显示欢迎消息                         |
-| `/help`                        | 同 /start                            |
-| `/status`                      | 检查 Bot 状态                        |
-| `/sysinfo`                     | 显示 Claude 版本、Node、macOS 信息   |
-| `/reset`                       | 清除当前对话会话                     |
-| `/stop`                        | 关闭 Bot 进程                        |
-| `/ask <文本>`                  | （群聊）向 Claude 提问               |
-| `/reload`                      | 重新加载配置（仅 Owner）             |
-| `/sessions`                    | 查看活跃会话（仅 Owner）             |
-| `/logs [n]`                    | 查看最近日志（仅 Owner）             |
-| `/config`                      | 显示配置摘要（仅 Owner）             |
-| `/admin`                       | 显示管理面板链接（仅 Owner）         |
-| `/prompt [文本\|clear]`        | 设置/查看每个聊天的系统提示词        |
-| `/usage`                       | 查看使用统计                         |
-| `/remind <时间> <消息>`        | 创建定时任务/提醒                    |
-| `/tasks`                       | 列出所有定时任务                     |
+| 命令                    | 说明                               |
+| ----------------------- | ---------------------------------- |
+| `/start`                | 显示欢迎消息                       |
+| `/help`                 | 同 /start                          |
+| `/status`               | 检查 Bot 状态                      |
+| `/sysinfo`              | 显示 Claude 版本、Node、macOS 信息 |
+| `/reset`                | 清除当前对话会话                   |
+| `/stop`                 | 关闭 Bot 进程                      |
+| `/ask <文本>`           | （群聊）向 Claude 提问             |
+| `/reload`               | 重新加载配置（仅 Owner）           |
+| `/sessions`             | 查看活跃会话（仅 Owner）           |
+| `/logs [n]`             | 查看最近日志（仅 Owner）           |
+| `/config`               | 显示配置摘要（仅 Owner）           |
+| `/admin`                | 显示管理面板链接（仅 Owner）       |
+| `/prompt [文本\|clear]` | 设置/查看每个聊天的系统提示词      |
+| `/usage`                | 查看使用统计                       |
+| `/remind <时间> <消息>` | 创建定时任务/提醒                  |
+| `/tasks`                | 列出所有定时任务                   |
 
 ## 群聊设置
 

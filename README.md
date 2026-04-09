@@ -166,8 +166,8 @@ plugin = MyPlugin()
 
 ### Built-in Plugins
 
-| Plugin       | Description                                    |
-| ------------ | ---------------------------------------------- |
+| Plugin       | Description                                     |
+| ------------ | ----------------------------------------------- |
 | `admin_api`  | Web admin panel (core, cannot be disabled)      |
 | `management` | Owner commands: /reload, /sessions, /logs, etc. |
 | `scheduler`  | Scheduled tasks & reminders (/remind, /tasks)   |
@@ -180,24 +180,24 @@ All UI colors are defined in `claude_bot/plugins/theme.py`. Edit that single fil
 
 ## Commands Reference
 
-| Command                        | Description                              |
-| ------------------------------ | ---------------------------------------- |
-| `/start`                       | Show welcome message                     |
-| `/help`                        | Same as /start                           |
-| `/status`                      | Check bot is alive                       |
-| `/sysinfo`                     | Show Claude version, Node, macOS info    |
-| `/reset`                       | Clear current conversation session       |
-| `/stop`                        | Shut down the bot process                |
-| `/ask <text>`                  | (Groups) Ask Claude a question           |
-| `/reload`                      | Reload config (owner only)               |
-| `/sessions`                    | List active sessions (owner only)        |
-| `/logs [n]`                    | Show recent log lines (owner only)       |
-| `/config`                      | Show config summary (owner only)         |
-| `/admin`                       | Show admin panel URL (owner only)        |
-| `/prompt [text\|clear]`        | Set/view per-chat system prompt          |
-| `/usage`                       | Show usage statistics                    |
-| `/remind <schedule> <message>` | Create a scheduled task/reminder         |
-| `/tasks`                       | List all scheduled tasks                 |
+| Command                        | Description                           |
+| ------------------------------ | ------------------------------------- |
+| `/start`                       | Show welcome message                  |
+| `/help`                        | Same as /start                        |
+| `/status`                      | Check bot is alive                    |
+| `/sysinfo`                     | Show Claude version, Node, macOS info |
+| `/reset`                       | Clear current conversation session    |
+| `/stop`                        | Shut down the bot process             |
+| `/ask <text>`                  | (Groups) Ask Claude a question        |
+| `/reload`                      | Reload config (owner only)            |
+| `/sessions`                    | List active sessions (owner only)     |
+| `/logs [n]`                    | Show recent log lines (owner only)    |
+| `/config`                      | Show config summary (owner only)      |
+| `/admin`                       | Show admin panel URL (owner only)     |
+| `/prompt [text\|clear]`        | Set/view per-chat system prompt       |
+| `/usage`                       | Show usage statistics                 |
+| `/remind <schedule> <message>` | Create a scheduled task/reminder      |
+| `/tasks`                       | List all scheduled tasks              |
 
 ## Group Setup
 
