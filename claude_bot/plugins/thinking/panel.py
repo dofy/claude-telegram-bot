@@ -3,6 +3,7 @@
 from nicegui import ui
 
 from ...config import cfg
+from ..theme import ICON_MUTED, SWITCH, BTN_FLAT_DANGER
 
 
 def build_thinking_panel():
@@ -20,7 +21,7 @@ def build_thinking_panel():
         container.clear()
         with container:
             with ui.row().classes("w-full items-center mb-1"):
-                ui.icon("chat", color="red", size="20px")
+                ui.icon("chat", color=ICON_MUTED, size="20px")
                 ui.label("Thinking Messages").classes("text-base font-semibold")
                 ui.space()
                 ui.label(_count_text()).classes("text-xs text-gray-500")
@@ -68,7 +69,7 @@ def build_thinking_panel():
                                 render()
 
                             ui.switch(value=enabled, on_change=on_toggle).props(
-                                "dense color=red"
+                                SWITCH
                             ).classes("shrink-0")
 
                             inp = ui.input(value=m["text"]).classes(
@@ -95,7 +96,7 @@ def build_thinking_panel():
                                 "flat dense round size=xs color=primary"
                             ).classes("shrink-0")
                             ui.button(icon="close", on_click=do_delete).props(
-                                "flat dense round size=xs color=negative"
+                                "flat dense round size=xs color=grey"
                             ).classes("shrink-0")
 
                 _make_row(idx, msg)
@@ -118,7 +119,7 @@ def build_thinking_panel():
                         ui.notify("Added", type="positive")
 
                     ui.button(icon="add_circle", on_click=do_add).props(
-                        "flat dense round size=xs color=primary"
+                        "flat dense round size=xs color=positive"
                     ).classes("shrink-0")
 
     render()

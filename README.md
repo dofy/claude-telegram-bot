@@ -102,31 +102,46 @@ launchctl unload ~/Library/LaunchAgents/xyz.phpz.claude-telegram-bot.plist
 ## Project Structure
 
 ```
-├── bot.py                  # Entry point (3 lines)
-├── config.json             # Dynamic config (gitignored)
-├── .env                    # Secrets (gitignored)
+├── bot.py                          # Entry point
+├── config.json                     # Dynamic config (gitignored)
+├── .env                            # Secrets (gitignored)
+├── data/                           # Plugin data (stats, tasks)
 ├── claude_bot/
-│   ├── app.py              # Application assembly
-│   ├── config.py           # Config loading / saving
-│   ├── log.py              # Logging with file rotation
-│   ├── claude.py           # Claude CLI invocation
-│   ├── session.py          # Conversation session mgmt
-│   ├── formatter.py        # Markdown → HTML
-│   ├── sender.py           # Message chunking & sending
-│   ├── acl.py              # Access control
-│   ├── cleanup.py          # Inbox media cleanup
+│   ├── app.py                      # Application assembly
+│   ├── config.py                   # Config loading / saving
+│   ├── log.py                      # Logging with file rotation
+│   ├── claude.py                   # Claude CLI invocation
+│   ├── session.py                  # Conversation session mgmt
+│   ├── formatter.py                # Markdown → HTML
+│   ├── sender.py                   # Message chunking & sending
+│   ├── acl.py                      # Access control
+│   ├── cleanup.py                  # Inbox media cleanup
+│   ├── utils.py                    # Shared decorators (owner_only)
 │   ├── handlers/
-│   │   ├── commands.py     # /start, /status, /reset...
-│   │   ├── message.py      # Private text + media
-│   │   └── group.py        # Group chat
+│   │   ├── commands.py             # /start, /status, /reset...
+│   │   ├── message.py              # Private text + media
+│   │   └── group.py                # Group chat
 │   └── plugins/
-│       ├── base.py         # Plugin base class
-│       └── admin_api.py    # Built-in admin web panel
+│       ├── base.py                 # Plugin base class + GuardedCommandHandler
+│       ├── theme.py                # Centralized UI color palette
+│       ├── admin_api/              # Web admin panel (NiceGUI)
+│       │   ├── __init__.py         # Auth, theme, page routing
+│       │   └── panels.py           # Dashboard, secrets, ACL, logs, help
+│       ├── management/             # Owner-only Telegram commands
+│       ├── scheduler/              # Scheduled tasks & reminders
+│       │   ├── __init__.py         # Scheduler core + commands
+│       │   └── panel.py            # Admin UI for tasks
+│       ├── stats/                  # Usage statistics
+│       └── thinking/               # Random thinking messages
+│           ├── __init__.py         # Message logic
+│           └── panel.py            # Admin UI for messages
 ```
 
 ## Plugin System
 
-Plugins live in `claude_bot/plugins/`. Each plugin is a Python module exposing a `plugin` instance:
+All plugins are always registered at startup. Enable/disable is a **runtime toggle** — changes take effect immediately via `GuardedCommandHandler` and `is_enabled()` checks, no restart needed.
+
+Plugins live in `claude_bot/plugins/` as Python packages:
 
 ```python
 from claude_bot.plugins.base import Plugin
@@ -134,36 +149,55 @@ from telegram.ext import Application
 
 class MyPlugin(Plugin):
     name = "my_plugin"
+    display_name = "My Plugin"
     description = "Does something cool"
 
     def register(self, app: Application, config: dict) -> None:
-        # Register handlers, start background tasks, etc.
-        pass
+        app.add_handler(self.command("mycommand", my_handler))
+
+    def get_commands(self) -> list[tuple[str, str]]:
+        return [("mycommand", "Description for BotFather")]
+
+    def get_admin_tabs(self):
+        return [("my_tab", "My Tab", "icon", build_panel_fn)]
 
 plugin = MyPlugin()
 ```
 
-Enable/disable in `config.json`:
+### Built-in Plugins
 
-```json
-{
-  "plugins": {
-    "my_plugin": { "enabled": true }
-  }
-}
-```
+| Plugin       | Description                                    |
+| ------------ | ---------------------------------------------- |
+| `admin_api`  | Web admin panel (core, cannot be disabled)      |
+| `management` | Owner commands: /reload, /sessions, /logs, etc. |
+| `scheduler`  | Scheduled tasks & reminders (/remind, /tasks)   |
+| `stats`      | Usage statistics (/usage)                       |
+| `thinking`   | Random status messages while Claude processes   |
+
+### UI Theming
+
+All UI colors are defined in `claude_bot/plugins/theme.py`. Edit that single file to change the entire admin panel's look.
 
 ## Commands Reference
 
-| Command       | Description                           |
-| ------------- | ------------------------------------- |
-| `/start`      | Show welcome message                  |
-| `/help`       | Same as /start                        |
-| `/status`     | Check bot is alive (hostname + time)  |
-| `/sysinfo`    | Show Claude version, Node, macOS info |
-| `/reset`      | Clear current conversation session    |
-| `/stop`       | Shut down the bot process             |
-| `/ask <text>` | (Groups) Ask Claude a question        |
+| Command                        | Description                              |
+| ------------------------------ | ---------------------------------------- |
+| `/start`                       | Show welcome message                     |
+| `/help`                        | Same as /start                           |
+| `/status`                      | Check bot is alive                       |
+| `/sysinfo`                     | Show Claude version, Node, macOS info    |
+| `/reset`                       | Clear current conversation session       |
+| `/stop`                        | Shut down the bot process                |
+| `/ask <text>`                  | (Groups) Ask Claude a question           |
+| `/reload`                      | Reload config (owner only)               |
+| `/sessions`                    | List active sessions (owner only)        |
+| `/logs [n]`                    | Show recent log lines (owner only)       |
+| `/config`                      | Show config summary (owner only)         |
+| `/admin`                       | Show admin panel URL (owner only)        |
+| `/prompt [text\|clear]`        | Set/view per-chat system prompt          |
+| `/usage`                       | Show usage statistics                    |
+| `/remind <schedule> <message>` | Create a scheduled task/reminder         |
+| `/tasks`                       | List all scheduled tasks                 |
 
 ## Group Setup
 

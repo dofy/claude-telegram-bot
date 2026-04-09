@@ -10,6 +10,10 @@ from pathlib import Path
 from nicegui import ui
 
 from ...config import BASE_DIR, cfg
+from ..theme import (
+    STAT_UPTIME, STAT_MESSAGES, STAT_CLAUDE, STAT_AVG, STAT_SESSIONS,
+    BADGE_CORE, SWITCH, BTN_PRIMARY, BTN_FLAT_PRIMARY,
+)
 from . import section_header, code_block, stat_card, mask_value, boot_time
 
 # ── .env helpers ──────────────────────────────────────────────────────────────
@@ -123,15 +127,15 @@ def _build_dashboard_panel():
     with ui.element("div").classes("w-full").style(
         "display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:8px"
     ):
-        stat_card("Uptime", _fmt_uptime(uptime), "schedule", "green")
-        stat_card("Messages", str(s["today_messages"]), "chat_bubble", "blue")
-        stat_card("Claude", str(s["today_calls"]), "psychology", "purple")
+        stat_card("Uptime", _fmt_uptime(uptime), "schedule", STAT_UPTIME)
+        stat_card("Messages", str(s["today_messages"]), "chat_bubble", STAT_MESSAGES)
+        stat_card("Claude", str(s["today_calls"]), "psychology", STAT_CLAUDE)
         stat_card(
             "Avg",
             f"{s['today_avg_time']:.1f}s" if s["today_calls"] else "—",
-            "speed", "orange",
+            "speed", STAT_AVG,
         )
-        stat_card("Sessions", str(len(active_sessions)), "group", "cyan")
+        stat_card("Sessions", str(len(active_sessions)), "group", STAT_SESSIONS)
 
     # ── Runtime info ──────────────────────────────────────────────────────
     with ui.card().classes("w-full mt-4").props("flat bordered"):
@@ -242,7 +246,7 @@ def _build_secrets_panel():
                             )
 
             ui.button("Edit", icon="edit", on_click=show_edit).props(
-                "outline color=primary"
+                f"outline {BTN_PRIMARY}"
             )
 
     def show_edit():
@@ -287,7 +291,7 @@ def _build_secrets_panel():
                     ui.notify(f"Secrets saved{hint}", type="positive")
                     show_view()
 
-                ui.button("Save", icon="save", on_click=save).props("color=primary")
+                ui.button("Save", icon="save", on_click=save).props(BTN_PRIMARY)
                 ui.button("Cancel", icon="close", on_click=show_view).props("flat")
 
     show_view()
@@ -323,7 +327,7 @@ def _build_acl_panel():
         except ValueError:
             ui.notify("Invalid ID format", type="negative")
 
-    ui.button("Save", icon="save", on_click=save).props("color=primary")
+    ui.button("Save", icon="save", on_click=save).props(BTN_PRIMARY)
 
 
 # ── Claude Settings ───────────────────────────────────────────────────────────
@@ -359,7 +363,7 @@ def _build_claude_panel():
         cfg.set_value(["claude", "session_ttl_hours"], int(session_ttl.value))
         ui.notify("Claude settings saved", type="positive")
 
-    ui.button("Save", icon="save", on_click=save).props("color=primary")
+    ui.button("Save", icon="save", on_click=save).props(BTN_PRIMARY)
 
 
 # ── Plugins ───────────────────────────────────────────────────────────────────
@@ -400,7 +404,7 @@ def _build_plugins_panel():
                                 )
 
                         if protected:
-                            ui.badge("core", color="blue").classes("text-xs shrink-0")
+                            ui.badge("core", color=BADGE_CORE).classes("text-xs shrink-0")
                         else:
                             def _make_toggle(pname=name):
                                 def on_change(e):
@@ -412,7 +416,7 @@ def _build_plugins_panel():
 
                             ui.switch(
                                 value=enabled, on_change=_make_toggle()
-                            ).props("dense color=red").classes("shrink-0")
+                            ).props(SWITCH).classes("shrink-0")
 
     render()
 
@@ -462,7 +466,7 @@ def _build_logs_panel():
                 )
 
             ui.button("Save", icon="save", on_click=save_settings).props(
-                "color=primary size=sm"
+                f"{BTN_PRIMARY} size=sm"
             )
 
     ui.separator().classes("my-2")
@@ -500,9 +504,7 @@ def _build_logs_panel():
             value=300,
         ).classes("w-28")
 
-        auto_scroll = ui.switch("Auto scroll", value=True).props(
-            "dense color=red"
-        )
+        auto_scroll = ui.switch("Auto scroll", value=True).props(SWITCH)
 
     log_view = ui.log(max_lines=1000).classes("w-full").style("height:min(500px,60vh)")
 
@@ -522,7 +524,7 @@ def _build_logs_panel():
 
     with ui.row().classes("gap-2 mt-1"):
         ui.button("Refresh", icon="refresh", on_click=refresh).props(
-            "flat color=primary size=sm"
+            f"{BTN_FLAT_PRIMARY} size=sm"
         )
 
         def clear_view():

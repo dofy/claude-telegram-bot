@@ -12,6 +12,7 @@ from starlette.responses import JSONResponse, RedirectResponse
 from telegram.ext import Application
 
 from ..base import Plugin
+from ..theme import ACCENT, ICON_MUTED, SWITCH, LOGIN_ICON_CLS, EXTRA_CSS
 from ...config import cfg
 
 _BOOT_TIME = time.time()
@@ -49,7 +50,7 @@ def _is_authenticated() -> bool:
 
 def section_header(icon: str, title: str):
     with ui.row().classes("w-full items-center mb-2"):
-        ui.icon(icon, color="red", size="20px")
+        ui.icon(icon, color=ICON_MUTED, size="20px")
         ui.label(title).classes("text-base font-semibold")
 
 
@@ -79,7 +80,7 @@ def code_block(text: str, lang: str = ""):
 
 def stat_card(label: str, value: str, icon: str, color: str = "zinc"):
     with ui.card().classes(
-        f"p-3 bg-{color}-900/30 border border-{color}-700/30"
+        f"p-3 bg-{color}-900/20 border border-{color}-800/30"
     ).props("flat").style("min-width:0"):
         with ui.row().classes("items-center gap-1 mb-1"):
             ui.icon(icon, size="16px").classes(f"text-{color}-400")
@@ -104,7 +105,7 @@ def boot_time() -> float:
 
 def _apply_theme():
     ui.dark_mode(True)
-    ui.colors(primary="#dc2626")
+    ui.colors(primary=ACCENT)
     ui.add_head_html(
         '<link rel="stylesheet" href='
         '"https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">'
@@ -129,6 +130,7 @@ def _apply_theme():
         '  .q-card{padding:8px!important}'
         '  .q-tab-panel{padding:8px 4px!important}'
         '}'
+        f'{EXTRA_CSS}'
         '</style>'
     )
 
@@ -145,7 +147,7 @@ def login_page() -> RedirectResponse | None:
 
     with ui.card().classes("absolute-center p-8").style("width:min(90vw,384px)"):
         with ui.row().classes("items-center gap-3 mb-6"):
-            ui.icon("smart_toy", size="32px").classes("text-red-600")
+            ui.icon("smart_toy", size="32px").classes(LOGIN_ICON_CLS)
             ui.label("Claude Bot Admin").classes("text-xl font-bold")
 
         token_input = ui.input(
@@ -197,7 +199,7 @@ def admin_page(request: Request) -> RedirectResponse | None:
     with ui.header().classes(
         "items-center bg-[#18181b] border-b border-zinc-800 px-4"
     ):
-        ui.icon("smart_toy", color="red", size="24px")
+        ui.icon("smart_toy", color=ACCENT, size="24px")
         ui.label("Claude Bot").classes("text-sm font-bold ml-1")
         ui.space()
 
@@ -221,7 +223,7 @@ def admin_page(request: Request) -> RedirectResponse | None:
                     def on_click():
                         for k, b in tab_btns.items():
                             b.props(
-                                "flat color=red" if k == s else "flat color=grey"
+                                "flat color=primary" if k == s else "flat color=grey"
                             )
                         panels.value = s
                         ui.run_javascript(
@@ -233,7 +235,7 @@ def admin_page(request: Request) -> RedirectResponse | None:
                 btn = ui.button(
                     icon=icon, on_click=_make_click()
                 ).props(
-                    f"flat color={'red' if is_active else 'grey'}"
+                    f"flat color={'primary' if is_active else 'grey'}"
                 ).classes("px-2 min-w-0").tooltip(label)
                 tab_btns[slug] = btn
 

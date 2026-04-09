@@ -2,13 +2,14 @@
 
 from nicegui import ui
 
-from ...config import cfg
-from . import sched, parse_duration, fmt_duration, parse_time_str
-
+from . import sched
+from ..theme import (
+    ICON_MUTED, SWITCH, BTN_PRIMARY, BTN_FLAT_DANGER, BTN_DANGER,
+    TASK_TYPE_COLORS, TASK_MODE_COLORS,
+)
 
 _TYPE_ICONS = {"once": "⏱", "interval": "🔄", "daily": "📅"}
-_TYPE_COLORS = {"once": "grey", "interval": "blue", "daily": "purple"}
-_MODE_BADGES = {"remind": ("💬", "grey"), "ask": ("🤖", "red")}
+_MODE_ICONS = {"remind": "💬", "ask": "🤖"}
 
 
 def build_tasks_panel():
@@ -19,7 +20,7 @@ def build_tasks_panel():
         tasks = sched.list_all()
         with container:
             with ui.row().classes("w-full items-center mb-1"):
-                ui.icon("schedule", color="red", size="20px")
+                ui.icon("schedule", color=ICON_MUTED, size="20px")
                 ui.label("Scheduled Tasks").classes("text-base font-semibold")
                 ui.space()
                 active = sum(1 for t in tasks if t.get("enabled", True))
@@ -28,85 +29,20 @@ def build_tasks_panel():
                 )
 
             if not tasks:
-                ui.label("No tasks yet. Add one below.").classes(
-                    "text-sm text-gray-500 italic"
-                )
+                with ui.column().classes("w-full items-center py-8 gap-2"):
+                    ui.icon("event_busy", size="40px").classes("text-gray-600")
+                    ui.label("No scheduled tasks").classes("text-sm text-gray-500")
+                    ui.label("Use /remind in Telegram to create tasks.").classes(
+                        "text-xs text-gray-600"
+                    )
             else:
                 for task in tasks:
                     _render_task_row(task, render)
 
-            ui.separator().classes("my-2")
-
-            # ── Add task form ─────────────────────────────────────────────
-            ui.label("Add Task").classes("text-sm font-semibold")
-            with ui.card().classes("w-full p-4").props("flat bordered"):
-                with ui.row().classes("w-full gap-2 flex-wrap items-end"):
-                    type_sel = ui.select(
-                        label="Type",
-                        options=["once", "interval", "daily"],
-                        value="once",
-                    ).classes("w-28")
-
-                    mode_sel = ui.select(
-                        label="Mode",
-                        options={"remind": "💬 Remind", "ask": "🤖 Ask Claude"},
-                        value="remind",
-                    ).classes("w-36")
-
-                    schedule_in = ui.input(
-                        label="Schedule",
-                        placeholder="5m / 1h / 09:00",
-                    ).classes("w-32")
-
-                    chat_in = ui.number(
-                        label="Chat ID",
-                        value=cfg.owner_chat_id or None,
-                    ).classes("w-32")
-
-                msg_in = ui.input(
-                    label="Message / Prompt",
-                    placeholder="Reminder text or Claude prompt...",
-                ).classes("w-full")
-
-                def do_add():
-                    t = type_sel.value
-                    md = mode_sel.value
-                    s = (schedule_in.value or "").strip()
-                    m = (msg_in.value or "").strip()
-                    cid = int(chat_in.value) if chat_in.value else 0
-
-                    if not s or not m or not cid:
-                        ui.notify("Fill all fields", type="warning")
-                        return
-
-                    if t == "once":
-                        dur = parse_duration(s)
-                        if dur is None:
-                            ui.notify("Invalid duration (e.g. 5m, 1h30m)", type="negative")
-                            return
-                        sched.add_once(cid, m, dur, md)
-                    elif t == "interval":
-                        dur = parse_duration(s)
-                        if dur is None:
-                            ui.notify("Invalid interval (e.g. 30m, 2h)", type="negative")
-                            return
-                        sched.add_interval(cid, m, dur, md)
-                    elif t == "daily":
-                        ts = parse_time_str(s)
-                        if ts is None:
-                            ui.notify("Invalid time (e.g. 09:00)", type="negative")
-                            return
-                        sched.add_daily(cid, m, ts, md)
-
-                    ui.notify("Task added", type="positive")
-                    render()
-
-                ui.button("Add", icon="add", on_click=do_add).props(
-                    "color=primary size=sm"
-                )
-
-            # ── Cleanup button ────────────────────────────────────────────
-            done = sum(1 for t in tasks if t["type"] == "once" and not t.get("enabled", True))
+            done = sum(
+                1 for t in tasks
+                if t["type"] == "once" and not t.get("enabled", True)
+            )
             if done:
                 def do_clean():
                     removed = sched.cleanup_done()
@@ -114,7 +50,9 @@ def build_tasks_panel():
                     render()
 
                 ui.button(
-                    f"Clean up {done} completed", icon="delete_sweep", on_click=do_clean,
+                    f"Clean up {done} completed",
+                    icon="delete_sweep",
+                    on_click=do_clean,
                 ).props("flat size=sm color=grey")
 
     render()
@@ -124,48 +62,169 @@ def _render_task_row(task: dict, render_fn):
     enabled = task.get("enabled", True)
     tid = task["id"]
     ttype = task["type"]
-    card_cls = "w-full p-3" if enabled else "w-full p-3 opacity-50"
-
     mode = task.get("mode", "remind")
-    mode_icon, mode_color = _MODE_BADGES.get(mode, ("💬", "grey"))
+    mode_icon = _MODE_ICONS.get(mode, "💬")
+    mode_color = TASK_MODE_COLORS.get(mode, "grey")
 
-    with ui.card().classes(card_cls).props("flat bordered"):
-        with ui.row().classes("w-full items-center gap-2 flex-wrap"):
-            ui.badge(
-                f"{_TYPE_ICONS.get(ttype, '?')} {ttype}",
-                color=_TYPE_COLORS.get(ttype, "grey"),
-            ).classes("text-xs")
+    card_cls = "w-full p-3" if enabled else "w-full p-3 opacity-50"
+    with ui.card().classes(card_cls).props("flat bordered") as card:
+        # view row
+        view_row = ui.column().classes("w-full gap-1")
+        with view_row:
+            with ui.row().classes("w-full items-center gap-2 flex-wrap"):
+                ui.badge(
+                    f"{_TYPE_ICONS.get(ttype, '?')} {ttype}",
+                    color=TASK_TYPE_COLORS.get(ttype, "grey"),
+                ).classes("text-xs")
+                ui.badge(
+                    f"{mode_icon} {mode}",
+                    color=mode_color,
+                ).classes("text-xs")
+                ui.label(task.get("schedule_str", "")).classes(
+                    "text-xs font-mono text-gray-400"
+                )
+                ui.label(f"#{tid}").classes("text-xs text-gray-600")
 
-            ui.badge(
-                f"{mode_icon} {mode}",
-                color=mode_color,
-            ).classes("text-xs")
+                ui.space()
 
-            ui.label(task.get("schedule_str", "")).classes(
-                "text-xs font-mono text-gray-400"
-            )
+                def on_toggle(e, task_id=tid):
+                    sched.toggle(task_id, e.value)
+                    render_fn()
 
-            ui.label(f"#{tid}").classes("text-xs text-gray-600")
+                ui.switch(value=enabled, on_change=on_toggle).props(
+                    SWITCH
+                ).classes("shrink-0")
 
-            ui.space()
+                def show_edit(vr=view_row, c=card):
+                    vr.set_visibility(False)
+                    edit_form.set_visibility(True)
 
-            def on_toggle(e, task_id=tid):
-                sched.toggle(task_id, e.value)
-                render_fn()
+                ui.button(icon="edit", on_click=show_edit).props(
+                    f"flat dense round size=sm {BTN_PRIMARY}"
+                ).classes("shrink-0")
 
-            ui.switch(value=enabled, on_change=on_toggle).props(
-                "dense color=red"
-            ).classes("shrink-0")
+                def confirm_delete(task_id=tid, msg=task["message"]):
+                    with ui.dialog() as dlg, ui.card().classes("p-4").style("min-width:280px"):
+                        ui.label("Delete Task?").classes("text-sm font-semibold")
+                        ui.label(msg[:80] + ("…" if len(msg) > 80 else "")).classes(
+                            "text-xs text-gray-400 break-all"
+                        )
+                        with ui.row().classes("w-full justify-end gap-2 mt-3"):
+                            ui.button("Cancel", on_click=dlg.close).props("flat size=sm")
 
-            def do_delete(task_id=tid):
-                sched.remove(task_id)
-                ui.notify("Deleted", type="info")
-                render_fn()
+                            def do_delete(task_id=task_id):
+                                sched.remove(task_id)
+                                dlg.close()
+                                ui.notify("Deleted", type="info")
+                                render_fn()
 
-            ui.button(icon="delete", on_click=do_delete).props(
-                "flat dense round size=sm color=negative"
-            ).classes("shrink-0")
+                            ui.button("Delete", icon="delete", on_click=do_delete).props(
+                                f"{BTN_DANGER} size=sm"
+                            )
+                    dlg.open()
 
-        ui.label(task["message"]).classes(
-            "text-sm w-full truncate"
-        )
+                ui.button(icon="delete", on_click=confirm_delete).props(
+                    BTN_FLAT_DANGER
+                ).classes("shrink-0")
+
+            ui.label(task["message"]).classes("text-sm w-full break-all")
+
+        # edit form (hidden by default)
+        _SCHED_HINTS = {
+            "once": ("Duration", "e.g. 5m, 1h30m"),
+            "interval": ("Interval", "e.g. 30m, 2h"),
+            "daily": ("Time", "HH:MM e.g. 09:00"),
+        }
+
+        edit_form = ui.column().classes("w-full gap-3")
+        edit_form.set_visibility(False)
+        with edit_form:
+            ui.label(f"Edit Task #{tid}").classes("text-sm font-semibold")
+
+            msg_input = ui.input(
+                label="Message / Prompt",
+                value=task["message"],
+            ).classes("w-full")
+
+            with ui.row().classes("w-full gap-2 flex-wrap items-end"):
+                type_sel = ui.select(
+                    label="Type",
+                    options={
+                        "once": "⏱ Once",
+                        "interval": "🔄 Interval",
+                        "daily": "📅 Daily",
+                    },
+                    value=ttype,
+                ).classes("w-36")
+
+                mode_sel = ui.select(
+                    label="Mode",
+                    options={"remind": "💬 Remind", "ask": "🤖 Ask Claude"},
+                    value=mode,
+                ).classes("w-36")
+
+                if ttype == "interval":
+                    from . import fmt_duration
+                    init_sched_val = fmt_duration(task.get("interval", 0))
+                elif ttype == "daily":
+                    init_sched_val = task.get("time", "")
+                else:
+                    init_sched_val = task.get("schedule_str", "")
+
+                hint_label, hint_ph = _SCHED_HINTS[ttype]
+                sched_input = ui.input(
+                    label=hint_label,
+                    placeholder=hint_ph,
+                    value=init_sched_val,
+                ).classes("w-40")
+
+                def _on_type_change(e):
+                    lbl, ph = _SCHED_HINTS.get(e.value, ("Schedule", ""))
+                    sched_input.label = lbl
+                    sched_input.placeholder = ph
+                    sched_input.value = ""
+
+                type_sel.on_value_change(_on_type_change)
+
+            with ui.row().classes("gap-2"):
+                def do_save(task_id=tid, orig_type=ttype, orig_sched=init_sched_val):
+                    new_msg = msg_input.value.strip()
+                    new_mode = mode_sel.value
+                    new_type = type_sel.value
+                    new_sched = sched_input.value.strip() if sched_input.value else None
+
+                    if not new_msg:
+                        ui.notify("Message cannot be empty", type="warning")
+                        return
+
+                    type_changed = new_type != orig_type
+                    sched_changed = new_sched != orig_sched
+
+                    if type_changed and not new_sched:
+                        ui.notify("Schedule is required when changing type", type="warning")
+                        return
+
+                    ok = sched.update(
+                        task_id,
+                        message=new_msg,
+                        mode=new_mode,
+                        task_type=new_type if type_changed else None,
+                        schedule=new_sched if (type_changed or sched_changed) else None,
+                    )
+                    if ok:
+                        ui.notify("Task updated", type="positive")
+                        render_fn()
+                    else:
+                        ui.notify("Invalid schedule format", type="negative")
+
+                ui.button("Save", icon="save", on_click=do_save).props(
+                    f"{BTN_PRIMARY} size=sm"
+                )
+
+                def do_cancel():
+                    edit_form.set_visibility(False)
+                    view_row.set_visibility(True)
+
+                ui.button("Cancel", icon="close", on_click=do_cancel).props(
+                    "flat size=sm"
+                )

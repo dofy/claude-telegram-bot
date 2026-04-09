@@ -216,6 +216,67 @@ class Scheduler:
             return True
         return False
 
+    def update(self, task_id: str, *, message: str | None = None,
+               mode: str | None = None, task_type: str | None = None,
+               schedule: str | None = None) -> bool:
+        """Update a task's fields and re-register its job."""
+        for task in self._tasks:
+            if task["id"] != task_id:
+                continue
+            if message is not None:
+                task["message"] = message
+            if mode is not None:
+                task["mode"] = mode
+
+            new_type = task_type if task_type else task["type"]
+            if task_type and task_type != task["type"]:
+                task["type"] = task_type
+                # schedule is required when switching type
+                if not schedule:
+                    return False
+
+            if schedule is not None:
+                if new_type == "interval":
+                    dur = parse_duration(schedule)
+                    if dur is None:
+                        return False
+                    task["interval"] = dur
+                    task["schedule_str"] = f"every {fmt_duration(dur)}"
+                    task.pop("time", None)
+                    task.pop("fire_at", None)
+                elif new_type == "daily":
+                    ts = parse_time_str(schedule)
+                    if ts is None:
+                        return False
+                    task["time"] = ts
+                    task["schedule_str"] = f"daily {ts}"
+                    task.pop("interval", None)
+                    task.pop("fire_at", None)
+                elif new_type == "once":
+                    dur = parse_duration(schedule)
+                    if dur is None:
+                        return False
+                    task["fire_at"] = time.time() + dur
+                    task["schedule_str"] = fmt_duration(dur)
+                    task.pop("interval", None)
+                    task.pop("time", None)
+
+            self._cancel_job(task_id)
+            if task.get("enabled", True):
+                if new_type == "once":
+                    remaining = task.get("fire_at", 0) - time.time()
+                    if remaining > 0:
+                        self._register_once(task, remaining)
+                    else:
+                        task["enabled"] = False
+                elif new_type == "interval":
+                    self._register_interval(task)
+                elif new_type == "daily":
+                    self._register_daily(task)
+            self._save()
+            return True
+        return False
+
     def toggle(self, task_id: str, enabled: bool) -> bool:
         for task in self._tasks:
             if task["id"] != task_id:

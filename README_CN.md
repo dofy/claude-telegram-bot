@@ -102,31 +102,46 @@ launchctl unload ~/Library/LaunchAgents/xyz.phpz.claude-telegram-bot.plist
 ## 项目结构
 
 ```
-├── bot.py                  # 入口文件
-├── config.json             # 动态配置（gitignored）
-├── .env                    # 密钥（gitignored）
+├── bot.py                          # 入口文件
+├── config.json                     # 动态配置（gitignored）
+├── .env                            # 密钥（gitignored）
+├── data/                           # 插件数据（统计、定时任务）
 ├── claude_bot/
-│   ├── app.py              # 应用组装
-│   ├── config.py           # 配置加载/保存
-│   ├── log.py              # 日志及文件轮转
-│   ├── claude.py           # Claude CLI 调用
-│   ├── session.py          # 对话会话管理
-│   ├── formatter.py        # Markdown → HTML 转换
-│   ├── sender.py           # 消息分块与发送
-│   ├── acl.py              # 访问控制
-│   ├── cleanup.py          # 收件箱媒体清理
+│   ├── app.py                      # 应用组装
+│   ├── config.py                   # 配置加载/保存
+│   ├── log.py                      # 日志及文件轮转
+│   ├── claude.py                   # Claude CLI 调用
+│   ├── session.py                  # 对话会话管理
+│   ├── formatter.py                # Markdown → HTML 转换
+│   ├── sender.py                   # 消息分块与发送
+│   ├── acl.py                      # 访问控制
+│   ├── cleanup.py                  # 收件箱媒体清理
+│   ├── utils.py                    # 公共装饰器（owner_only）
 │   ├── handlers/
-│   │   ├── commands.py     # /start, /status, /reset...
-│   │   ├── message.py      # 私聊文本 + 媒体
-│   │   └── group.py        # 群聊处理
+│   │   ├── commands.py             # /start, /status, /reset...
+│   │   ├── message.py              # 私聊文本 + 媒体
+│   │   └── group.py                # 群聊处理
 │   └── plugins/
-│       ├── base.py         # 插件基类
-│       └── admin_api.py    # 内置管理面板
+│       ├── base.py                 # 插件基类 + GuardedCommandHandler
+│       ├── theme.py                # 统一 UI 配色定义
+│       ├── admin_api/              # Web 管理面板（NiceGUI）
+│       │   ├── __init__.py         # 认证、主题、页面路由
+│       │   └── panels.py           # Dashboard、密钥、ACL、日志、帮助
+│       ├── management/             # Owner 专用 Telegram 命令
+│       ├── scheduler/              # 定时任务与提醒
+│       │   ├── __init__.py         # 调度器核心 + 命令
+│       │   └── panel.py            # 管理面板 UI
+│       ├── stats/                  # 使用统计
+│       └── thinking/               # 随机思考中消息
+│           ├── __init__.py         # 消息逻辑
+│           └── panel.py            # 管理面板 UI
 ```
 
 ## 插件系统
 
-插件位于 `claude_bot/plugins/`，每个插件是一个导出 `plugin` 实例的 Python 模块：
+所有插件在启动时全部注册。启用/禁用是**运行时开关**——通过 `GuardedCommandHandler` 和 `is_enabled()` 检查即时生效，无需重启。
+
+插件位于 `claude_bot/plugins/`，以 Python 包形式存在：
 
 ```python
 from claude_bot.plugins.base import Plugin
@@ -134,36 +149,55 @@ from telegram.ext import Application
 
 class MyPlugin(Plugin):
     name = "my_plugin"
+    display_name = "My Plugin"
     description = "做一些很酷的事"
 
     def register(self, app: Application, config: dict) -> None:
-        # 注册 handler、启动后台任务等
-        pass
+        app.add_handler(self.command("mycommand", my_handler))
+
+    def get_commands(self) -> list[tuple[str, str]]:
+        return [("mycommand", "BotFather 命令描述")]
+
+    def get_admin_tabs(self):
+        return [("my_tab", "My Tab", "icon", build_panel_fn)]
 
 plugin = MyPlugin()
 ```
 
-在 `config.json` 中启用/禁用：
+### 内置插件
 
-```json
-{
-  "plugins": {
-    "my_plugin": { "enabled": true }
-  }
-}
-```
+| 插件         | 说明                                        |
+| ------------ | ------------------------------------------- |
+| `admin_api`  | Web 管理面板（核心，不可禁用）                |
+| `management` | Owner 命令：/reload, /sessions, /logs 等     |
+| `scheduler`  | 定时任务与提醒（/remind, /tasks）             |
+| `stats`      | 使用统计（/usage）                            |
+| `thinking`   | Claude 处理时的随机状态消息                   |
+
+### UI 主题
+
+所有 UI 颜色统一定义在 `claude_bot/plugins/theme.py`，修改该文件即可改变整个管理面板的外观。
 
 ## 命令参考
 
-| 命令          | 说明                               |
-| ------------- | ---------------------------------- |
-| `/start`      | 显示欢迎消息                       |
-| `/help`       | 同 /start                          |
-| `/status`     | 检查 Bot 状态（主机名 + 时间）     |
-| `/sysinfo`    | 显示 Claude 版本、Node、macOS 信息 |
-| `/reset`      | 清除当前对话会话                   |
-| `/stop`       | 关闭 Bot 进程                      |
-| `/ask <文本>` | （群聊）向 Claude 提问             |
+| 命令                           | 说明                                 |
+| ------------------------------ | ------------------------------------ |
+| `/start`                       | 显示欢迎消息                         |
+| `/help`                        | 同 /start                            |
+| `/status`                      | 检查 Bot 状态                        |
+| `/sysinfo`                     | 显示 Claude 版本、Node、macOS 信息   |
+| `/reset`                       | 清除当前对话会话                     |
+| `/stop`                        | 关闭 Bot 进程                        |
+| `/ask <文本>`                  | （群聊）向 Claude 提问               |
+| `/reload`                      | 重新加载配置（仅 Owner）             |
+| `/sessions`                    | 查看活跃会话（仅 Owner）             |
+| `/logs [n]`                    | 查看最近日志（仅 Owner）             |
+| `/config`                      | 显示配置摘要（仅 Owner）             |
+| `/admin`                       | 显示管理面板链接（仅 Owner）         |
+| `/prompt [文本\|clear]`        | 设置/查看每个聊天的系统提示词        |
+| `/usage`                       | 查看使用统计                         |
+| `/remind <时间> <消息>`        | 创建定时任务/提醒                    |
+| `/tasks`                       | 列出所有定时任务                     |
 
 ## 群聊设置
 
