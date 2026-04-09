@@ -595,6 +595,10 @@ def _build_help_panel():
     python_ver = platform.python_version()
     os_info = f"{platform.system()} {platform.release()}"
 
+    admin_cfg = cfg.plugins_config.get("admin_api", {})
+    admin_port = admin_cfg.get("port", 8080)
+    admin_enabled = admin_cfg.get("enabled", True)
+
     with ui.card().classes("w-full").props("flat bordered"):
         ui.label("Runtime Environment").classes("text-sm font-semibold mb-2")
         rows = [
@@ -603,6 +607,8 @@ def _build_help_panel():
             ("uv", uv_path),
             ("OS", os_info),
             ("Base Dir", str(BASE_DIR)),
+            ("Admin Panel", f"http://127.0.0.1:{admin_port}" if admin_enabled else "disabled"),
+            ("Admin Auth", cfg.admin_token or "(disabled)"),
         ]
         for label, val in rows:
             with ui.row().classes("w-full items-start py-1 px-2"):
@@ -614,39 +620,6 @@ def _build_help_panel():
         "text-sm font-semibold mt-6 mb-2"
     )
     _code_block(f"cd {BASE_DIR}\n{uv_path} run bot.py", lang="bash")
-    ui.label(
-        "This starts the Telegram bot and the admin panel (NiceGUI/Uvicorn) "
-        "together in one process."
-    ).classes("text-xs text-gray-500 mt-1")
-
-    # ── Admin panel standalone ────────────────────────────────────────────
-    admin_cfg = cfg.plugins_config.get("admin_api", {})
-    admin_port = admin_cfg.get("port", 8080)
-
-    ui.label("Admin Panel (Uvicorn)").classes(
-        "text-sm font-semibold mt-6 mb-2"
-    )
-    with ui.card().classes("w-full").props("flat bordered"):
-        ui.label("Startup Info").classes("text-xs font-semibold mb-2")
-        info_rows = [
-            ("Framework", "NiceGUI (backed by Uvicorn ASGI server)"),
-            ("Host", "127.0.0.1"),
-            ("Port", str(admin_port)),
-            ("URL", f"http://127.0.0.1:{admin_port}"),
-            ("Auth", cfg.admin_token or "(disabled)"),
-            ("Mode", "Embedded — runs as daemon thread inside bot process"),
-        ]
-        for label, val in info_rows:
-            with ui.row().classes("w-full items-start py-1 px-2"):
-                ui.label(label).classes("w-28 text-xs text-gray-400 shrink-0")
-                ui.label(val).classes("text-xs font-mono break-all")
-
-    ui.label(
-        "NiceGUI requires ui.run() to bootstrap Uvicorn internally. "
-        "The admin panel cannot be started standalone — "
-        "it always runs embedded inside 'uv run bot.py'."
-    ).classes("text-xs text-gray-500 mt-2")
-
     # ── launchd commands ─────────────────────────────────────────────────
     label_name = "xyz.phpz.claude-telegram-bot"
     home = Path.home()
