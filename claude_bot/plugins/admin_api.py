@@ -647,7 +647,7 @@ def _build_help_panel():
     ).classes("text-xs text-gray-500 mt-2 mb-1")
     _code_block(
         f"cd {BASE_DIR}\n"
-        f"{uv_path} run uvicorn nicegui.ui:app --host 127.0.0.1 --port {admin_port}",
+        f"{uv_path} run uvicorn nicegui:app --host 127.0.0.1 --port {admin_port}",
         lang="bash",
     )
     ui.label(
