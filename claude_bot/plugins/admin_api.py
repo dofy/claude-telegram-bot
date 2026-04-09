@@ -18,6 +18,9 @@ from telegram.ext import Application
 
 from .base import Plugin
 from ..config import BASE_DIR, cfg
+from ..stats import stats
+
+_BOOT_TIME = time.time()
 
 log = logging.getLogger("claude_bot.plugins.admin_api")
 
@@ -116,8 +119,13 @@ def _apply_theme():
         '<script src='
         '"https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>'
         '<script>'
+        'window._hljs_apply = () => {'
+        '  if(!window.hljs) return;'
+        '  document.querySelectorAll("pre code.hljs").forEach(el => el.removeAttribute("data-highlighted"));'
+        '  hljs.highlightAll();'
+        '};'
         'document.addEventListener("DOMContentLoaded", () => {'
-        '  const run = () => { if(window.hljs) hljs.highlightAll(); else setTimeout(run, 100); };'
+        '  const run = () => { if(window.hljs) window._hljs_apply(); else setTimeout(run, 100); };'
         '  run();'
         '});'
         '</script>'
@@ -167,6 +175,7 @@ def admin_page(request: Request) -> RedirectResponse | None:
     _apply_theme()
 
     _TAB_DEFS = [
+        ("dashboard", "Dashboard", "dashboard"),
         ("secrets", "Secrets", "key"),
         ("acl", "ACL", "shield"),
         ("thinking", "Thinking", "chat"),
@@ -176,6 +185,7 @@ def admin_page(request: Request) -> RedirectResponse | None:
         ("help", "Help", "help_outline"),
     ]
     _TAB_BUILDERS = {
+        "dashboard": _build_dashboard_panel,
         "secrets": _build_secrets_panel,
         "acl": _build_acl_panel,
         "thinking": _build_thinking_panel,
@@ -185,9 +195,9 @@ def admin_page(request: Request) -> RedirectResponse | None:
         "help": _build_help_panel,
     }
 
-    active_tab = request.query_params.get("tab", "secrets")
+    active_tab = request.query_params.get("tab", "dashboard")
     if active_tab not in _TAB_BUILDERS:
-        active_tab = "secrets"
+        active_tab = "dashboard"
 
     with ui.header().classes(
         "items-center bg-[#18181b] border-b border-zinc-800"
@@ -216,7 +226,8 @@ def admin_page(request: Request) -> RedirectResponse | None:
 
         def on_tab_change(e):
             ui.run_javascript(
-                f"history.replaceState(null, '', '/?tab={e.value}')"
+                f"history.replaceState(null, '', '/?tab={e.value}');"
+                "setTimeout(() => window._hljs_apply && window._hljs_apply(), 50);"
             )
 
         tabs.on_value_change(on_tab_change)
@@ -228,6 +239,106 @@ def admin_page(request: Request) -> RedirectResponse | None:
 
 
 # ── Panel builders ────────────────────────────────────────────────────────────
+
+def _fmt_uptime(seconds: float) -> str:
+    d, rem = divmod(int(seconds), 86400)
+    h, rem = divmod(rem, 3600)
+    m, s = divmod(rem, 60)
+    parts = []
+    if d:
+        parts.append(f"{d}d")
+    if h:
+        parts.append(f"{h}h")
+    parts.append(f"{m}m")
+    return " ".join(parts)
+
+
+def _stat_card(label: str, value: str, icon: str, color: str = "zinc"):
+    with ui.card().classes(
+        f"flex-1 min-w-0 p-4 bg-{color}-900/30 border border-{color}-700/30"
+    ).props("flat"):
+        with ui.row().classes("items-center gap-2 mb-1"):
+            ui.icon(icon, size="18px").classes(f"text-{color}-400")
+            ui.label(label).classes("text-xs text-gray-400")
+        ui.label(value).classes("text-xl font-bold")
+
+
+def _build_dashboard_panel():
+    from ..app import __version__
+    from .. import session
+
+    _section_header("dashboard", "Dashboard")
+
+    # ── Status cards row ──────────────────────────────────────────────────
+    uptime = time.time() - _BOOT_TIME
+    s = stats.summary()
+    active_sessions = session.list_active()
+
+    with ui.row().classes("w-full gap-3"):
+        _stat_card("Uptime", _fmt_uptime(uptime), "schedule", "green")
+        _stat_card("Messages", str(s["today_messages"]), "chat_bubble", "blue")
+        _stat_card("Claude Calls", str(s["today_calls"]), "psychology", "purple")
+        _stat_card(
+            "Avg Response",
+            f"{s['today_avg_time']:.1f}s" if s["today_calls"] else "—",
+            "speed", "orange",
+        )
+        _stat_card("Sessions", str(len(active_sessions)), "group", "cyan")
+
+    # ── Runtime info ──────────────────────────────────────────────────────
+    with ui.card().classes("w-full mt-4").props("flat bordered"):
+        ui.label("Runtime").classes("text-sm font-semibold mb-3")
+
+        admin_cfg = cfg.plugins_config.get("admin_api", {})
+        port = admin_cfg.get("port", 8080)
+
+        rows = [
+            ("Version", __version__),
+            ("Python", platform.python_version()),
+            ("OS", f"{platform.system()} {platform.release()}"),
+            ("Owner", str(cfg.owner_chat_id)),
+            ("Groups", str(len(cfg.allowed_group_ids))),
+            ("Session TTL", f"{cfg.session_ttl_hours}h"),
+            ("Max Retries", str(cfg.claude_max_retries)),
+            ("Log Level", cfg.log_level),
+            ("Admin Port", str(port)),
+        ]
+        with ui.grid(columns=2).classes("w-full gap-x-8 gap-y-1"):
+            for label, val in rows:
+                with ui.row().classes("items-center"):
+                    ui.label(label).classes("w-24 text-xs text-gray-400 shrink-0")
+                    ui.label(val).classes("text-xs font-mono")
+
+    # ── All-time stats ────────────────────────────────────────────────────
+    with ui.card().classes("w-full mt-4").props("flat bordered"):
+        ui.label("All-Time Statistics").classes("text-sm font-semibold mb-3")
+        with ui.row().classes("gap-8"):
+            for label, val in [
+                ("Total Messages", str(s["total_messages"])),
+                ("Total Claude Calls", str(s["total_claude_calls"])),
+                ("Today Total Time", f"{s['today_total_time']:.0f}s"),
+            ]:
+                with ui.column().classes("items-center"):
+                    ui.label(val).classes("text-2xl font-bold")
+                    ui.label(label).classes("text-xs text-gray-400")
+
+    # ── Active sessions table ─────────────────────────────────────────────
+    if active_sessions:
+        with ui.card().classes("w-full mt-4").props("flat bordered"):
+            ui.label("Active Sessions").classes("text-sm font-semibold mb-3")
+            columns = [
+                {"name": "chat_id", "label": "Chat ID", "field": "chat_id", "align": "left"},
+                {"name": "session_id", "label": "Session", "field": "session_id", "align": "left"},
+                {"name": "idle_min", "label": "Idle", "field": "idle_min", "align": "right"},
+            ]
+            rows = [
+                {**s, "idle_min": f"{s['idle_min']}min"}
+                for s in active_sessions
+            ]
+            ui.table(columns=columns, rows=rows).classes("w-full").props(
+                "flat dense bordered"
+            )
+
 
 def _section_header(icon: str, title: str):
     with ui.row().classes("w-full items-center mb-4"):
