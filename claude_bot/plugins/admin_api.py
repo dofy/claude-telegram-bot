@@ -622,7 +622,6 @@ def _build_help_panel():
     # ── Admin panel standalone ────────────────────────────────────────────
     admin_cfg = cfg.plugins_config.get("admin_api", {})
     admin_port = admin_cfg.get("port", 8080)
-    uvicorn_path = shutil.which("uvicorn") or "uvicorn"
 
     ui.label("Admin Panel (Uvicorn)").classes(
         "text-sm font-semibold mt-6 mb-2"
@@ -643,19 +642,10 @@ def _build_help_panel():
                 ui.label(val).classes("text-xs font-mono break-all")
 
     ui.label(
-        "Equivalent Uvicorn command (for reference):"
-    ).classes("text-xs text-gray-500 mt-2 mb-1")
-    _code_block(
-        f"cd {BASE_DIR}\n"
-        f"{uv_path} run uvicorn nicegui:app --host 127.0.0.1 --port {admin_port}",
-        lang="bash",
-    )
-    ui.label(
-        "Note: uvicorn is installed in .venv (NiceGUI dependency). "
-        "Use 'uv run' prefix to access it. "
-        "The admin panel is tightly coupled with the bot — "
-        "use 'uv run bot.py' for normal operation."
-    ).classes("text-xs text-gray-500 mt-1")
+        "NiceGUI requires ui.run() to bootstrap Uvicorn internally. "
+        "The admin panel cannot be started standalone — "
+        "it always runs embedded inside 'uv run bot.py'."
+    ).classes("text-xs text-gray-500 mt-2")
 
     # ── launchd commands ─────────────────────────────────────────────────
     label_name = "xyz.phpz.claude-telegram-bot"
