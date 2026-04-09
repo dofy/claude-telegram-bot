@@ -86,15 +86,15 @@ uv run bot.py
 ### With launchd (macOS auto-start)
 
 ```bash
-cp com.seven.claude-telegram-bot.plist.example ~/Library/LaunchAgents/com.seven.claude-telegram-bot.plist
+cp xyz.phpz.claude-telegram-bot.plist.example ~/Library/LaunchAgents/xyz.phpz.claude-telegram-bot.plist
 # Edit the plist and update paths
-launchctl load ~/Library/LaunchAgents/com.seven.claude-telegram-bot.plist
+launchctl load ~/Library/LaunchAgents/xyz.phpz.claude-telegram-bot.plist
 ```
 
 To stop:
 
 ```bash
-launchctl unload ~/Library/LaunchAgents/com.seven.claude-telegram-bot.plist
+launchctl unload ~/Library/LaunchAgents/xyz.phpz.claude-telegram-bot.plist
 ```
 
 ## Project Structure

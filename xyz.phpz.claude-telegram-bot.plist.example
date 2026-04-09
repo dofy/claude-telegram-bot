@@ -4,7 +4,7 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.seven.claude-telegram-bot</string>
+  <string>xyz.phpz.claude-telegram-bot</string>
 
   <key>ProgramArguments</key>
   <array>

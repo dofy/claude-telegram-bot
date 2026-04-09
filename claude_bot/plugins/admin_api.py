@@ -607,7 +607,7 @@ def _build_help_panel():
     _code_block(f"cd {BASE_DIR}\n{uv_path} run bot.py")
 
     # ── launchd commands ─────────────────────────────────────────────────
-    label_name = "com.seven.claude-telegram-bot"
+    label_name = "xyz.phpz.claude-telegram-bot"
     home = Path.home()
     plist_path = home / "Library" / "LaunchAgents" / f"{label_name}.plist"
 

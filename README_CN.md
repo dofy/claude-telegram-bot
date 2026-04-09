@@ -86,15 +86,15 @@ uv run bot.py
 ### 使用 launchd（macOS 开机自启）
 
 ```bash
-cp com.seven.claude-telegram-bot.plist.example ~/Library/LaunchAgents/com.seven.claude-telegram-bot.plist
+cp xyz.phpz.claude-telegram-bot.plist.example ~/Library/LaunchAgents/xyz.phpz.claude-telegram-bot.plist
 # 编辑 plist 文件，更新路径
-launchctl load ~/Library/LaunchAgents/com.seven.claude-telegram-bot.plist
+launchctl load ~/Library/LaunchAgents/xyz.phpz.claude-telegram-bot.plist
 ```
 
 停止：
 
 ```bash
-launchctl unload ~/Library/LaunchAgents/com.seven.claude-telegram-bot.plist
+launchctl unload ~/Library/LaunchAgents/xyz.phpz.claude-telegram-bot.plist
 ```
 
 ## 项目结构
