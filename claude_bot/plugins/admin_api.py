@@ -610,8 +610,50 @@ def _build_help_panel():
                 ui.label(val).classes("text-xs font-mono break-all")
 
     # ── Manual start ─────────────────────────────────────────────────────
-    ui.label("Manual Start").classes("text-sm font-semibold mt-6 mb-2")
+    ui.label("Manual Start (Bot + Admin Panel)").classes(
+        "text-sm font-semibold mt-6 mb-2"
+    )
     _code_block(f"cd {BASE_DIR}\n{uv_path} run bot.py", lang="bash")
+    ui.label(
+        "This starts the Telegram bot and the admin panel (NiceGUI/Uvicorn) "
+        "together in one process."
+    ).classes("text-xs text-gray-500 mt-1")
+
+    # ── Admin panel standalone ────────────────────────────────────────────
+    admin_cfg = cfg.plugins_config.get("admin_api", {})
+    admin_port = admin_cfg.get("port", 8080)
+    uvicorn_path = shutil.which("uvicorn") or "uvicorn"
+
+    ui.label("Admin Panel (Uvicorn)").classes(
+        "text-sm font-semibold mt-6 mb-2"
+    )
+    with ui.card().classes("w-full").props("flat bordered"):
+        ui.label("Startup Info").classes("text-xs font-semibold mb-2")
+        info_rows = [
+            ("Framework", "NiceGUI (backed by Uvicorn ASGI server)"),
+            ("Host", "127.0.0.1"),
+            ("Port", str(admin_port)),
+            ("URL", f"http://127.0.0.1:{admin_port}"),
+            ("Auth", cfg.admin_token or "(disabled)"),
+            ("Mode", "Embedded — runs as daemon thread inside bot process"),
+        ]
+        for label, val in info_rows:
+            with ui.row().classes("w-full items-start py-1 px-2"):
+                ui.label(label).classes("w-28 text-xs text-gray-400 shrink-0")
+                ui.label(val).classes("text-xs font-mono break-all")
+
+    ui.label(
+        "Equivalent Uvicorn command (for reference):"
+    ).classes("text-xs text-gray-500 mt-2 mb-1")
+    _code_block(
+        f"cd {BASE_DIR}\n"
+        f"{uvicorn_path} nicegui.ui:app --host 127.0.0.1 --port {admin_port}",
+        lang="bash",
+    )
+    ui.label(
+        "Note: The admin panel is tightly coupled with the bot. "
+        "Use 'uv run bot.py' for normal operation."
+    ).classes("text-xs text-gray-500 mt-1")
 
     # ── launchd commands ─────────────────────────────────────────────────
     label_name = "xyz.phpz.claude-telegram-bot"
