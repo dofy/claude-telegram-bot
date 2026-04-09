@@ -171,7 +171,6 @@ def admin_page(request: Request) -> RedirectResponse | None:
         ("acl", "ACL", "shield"),
         ("thinking", "Thinking", "chat"),
         ("claude", "Claude", "memory"),
-        ("log", "Log", "tune"),
         ("plugins", "Plugins", "extension"),
         ("logs", "Logs", "terminal"),
         ("help", "Help", "help_outline"),
@@ -181,7 +180,6 @@ def admin_page(request: Request) -> RedirectResponse | None:
         "acl": _build_acl_panel,
         "thinking": _build_thinking_panel,
         "claude": _build_claude_panel,
-        "log": _build_log_panel,
         "plugins": _build_plugins_panel,
         "logs": _build_logs_panel,
         "help": _build_help_panel,
@@ -516,42 +514,6 @@ def _build_claude_panel():
     ui.button("Save", icon="save", on_click=save).props("color=primary")
 
 
-def _build_log_panel():
-    _section_header("tune", "Log Settings")
-
-    log_dir = ui.input(label="Directory", value=cfg.log_dir).classes("w-full")
-
-    with ui.row().classes("gap-4"):
-        rotation = ui.select(
-            label="Rotation",
-            options=["daily", "weekly"],
-            value=cfg.log_rotation,
-        ).classes("w-48")
-
-        keep_days = ui.number(
-            label="Keep Days", value=cfg.log_keep_days
-        ).classes("w-48")
-
-        level = ui.select(
-            label="Level",
-            options=["DEBUG", "INFO", "WARNING", "ERROR"],
-            value=cfg.log_level,
-        ).classes("w-48")
-
-    ui.label("Changes require a bot restart.").classes(
-        "text-xs text-gray-500"
-    )
-
-    def save():
-        cfg.set_value(["log", "dir"], log_dir.value)
-        cfg.set_value(["log", "rotation"], rotation.value)
-        cfg.set_value(["log", "keep_days"], int(keep_days.value))
-        cfg.set_value(["log", "level"], level.value)
-        ui.notify("Log settings saved — restart to apply", type="positive")
-
-    ui.button("Save", icon="save", on_click=save).props("color=primary")
-
-
 def _build_plugins_panel():
     _section_header("extension", "Plugins")
     from . import get_loaded
@@ -573,25 +535,121 @@ def _build_plugins_panel():
 
 
 def _build_logs_panel():
-    _section_header("terminal", "Live Logs")
-    log_view = ui.log(max_lines=500).classes("w-full h-[600px]")
+    _section_header("terminal", "Logs")
+
+    # ── Settings section (collapsible) ────────────────────────────────────
+    with ui.expansion("Log Settings", icon="tune").classes(
+        "w-full"
+    ).props("dense header-class='text-sm font-semibold'") as settings_exp:
+        with ui.column().classes("w-full gap-3 pt-2"):
+            log_dir = ui.input(
+                label="Directory", value=cfg.log_dir
+            ).classes("w-full")
+
+            with ui.row().classes("gap-4 flex-wrap"):
+                rotation = ui.select(
+                    label="Rotation",
+                    options=["daily", "weekly"],
+                    value=cfg.log_rotation,
+                ).classes("w-48")
+
+                keep_days = ui.number(
+                    label="Keep Days", value=cfg.log_keep_days
+                ).classes("w-48")
+
+                level = ui.select(
+                    label="Level",
+                    options=["DEBUG", "INFO", "WARNING", "ERROR"],
+                    value=cfg.log_level,
+                ).classes("w-48")
+
+            ui.label("Changes require a bot restart.").classes(
+                "text-xs text-gray-500"
+            )
+
+            def save_settings():
+                cfg.set_value(["log", "dir"], log_dir.value)
+                cfg.set_value(["log", "rotation"], rotation.value)
+                cfg.set_value(["log", "keep_days"], int(keep_days.value))
+                cfg.set_value(["log", "level"], level.value)
+                ui.notify(
+                    "Log settings saved — restart to apply", type="positive"
+                )
+
+            ui.button("Save", icon="save", on_click=save_settings).props(
+                "color=primary size=sm"
+            )
+
+    ui.separator().classes("my-2")
+
+    # ── Log viewer section ────────────────────────────────────────────────
+    log_path = Path(cfg.log_dir)
+    if not log_path.is_absolute():
+        log_path = BASE_DIR / log_path
+
+    log_files: list[str] = []
+    if log_path.exists():
+        log_files = sorted(
+            [f.name for f in log_path.iterdir() if f.is_file() and f.suffix == ".log"],
+            reverse=True,
+        )
+        dated = sorted(
+            [f.name for f in log_path.iterdir()
+             if f.is_file() and f.suffix != ".log" and f.name.startswith("bot.log.")],
+            reverse=True,
+        )
+        log_files.extend(dated)
+
+    if not log_files:
+        log_files = ["bot.log"]
+
+    with ui.row().classes("w-full items-center gap-3"):
+        file_select = ui.select(
+            label="Log File",
+            options=log_files,
+            value=log_files[0] if log_files else "bot.log",
+        ).classes("w-60")
+
+        lines_select = ui.select(
+            label="Lines",
+            options=[100, 200, 300, 500, 1000],
+            value=300,
+        ).classes("w-32")
+
+        ui.space()
+
+        auto_scroll = ui.switch("Auto scroll", value=True).props(
+            "dense color=red"
+        )
+
+    log_view = ui.log(max_lines=1000).classes("w-full h-[500px]")
 
     def refresh():
-        log_path = Path(cfg.log_dir)
-        if not log_path.is_absolute():
-            log_path = BASE_DIR / log_path
-        log_file = log_path / "bot.log"
-        if log_file.exists():
-            lines = log_file.read_text(
+        fname = file_select.value
+        max_lines = int(lines_select.value)
+        fpath = log_path / fname
+        log_view.clear()
+        if fpath.exists():
+            lines = fpath.read_text(
                 encoding="utf-8", errors="replace"
             ).splitlines()
-            log_view.clear()
-            for line in lines[-300:]:
+            for line in lines[-max_lines:]:
                 log_view.push(line)
+        else:
+            log_view.push(f"File not found: {fpath}")
 
-    ui.button("Refresh", icon="refresh", on_click=refresh).props(
-        "flat color=primary"
-    )
+    with ui.row().classes("gap-2 mt-1"):
+        ui.button("Refresh", icon="refresh", on_click=refresh).props(
+            "flat color=primary size=sm"
+        )
+
+        def clear_view():
+            log_view.clear()
+
+        ui.button("Clear", icon="clear_all", on_click=clear_view).props(
+            "flat color=grey size=sm"
+        )
+
     refresh()
 
 
@@ -666,6 +724,30 @@ def _build_help_panel():
             ui.button(icon="content_copy", on_click=_copy).props(
                 "flat dense round size=xs"
             ).classes("shrink-0").tooltip("Copy")
+
+    # ── BotFather command list ────────────────────────────────────────────
+    ui.label("BotFather Command List").classes(
+        "text-sm font-semibold mt-6 mb-1"
+    )
+    ui.label(
+        "Copy and send to @BotFather → /setcommands"
+    ).classes("text-xs text-gray-500 mb-2")
+    _code_block(
+        "start - Show welcome & command list\n"
+        "help - Same as /start\n"
+        "status - Check bot status\n"
+        "sysinfo - Show system info\n"
+        "reset - Clear conversation session\n"
+        "usage - Usage statistics\n"
+        "sessions - Active sessions\n"
+        "config - Config summary\n"
+        "admin - Admin panel link\n"
+        "reload - Reload config\n"
+        "logs - Recent log lines\n"
+        "prompt - Set/view system prompt\n"
+        "remind - Set a timed reminder\n"
+        "stop - Shut down the bot",
+    )
 
     # ── plist content ────────────────────────────────────────────────────
     ui.label("Current plist File").classes("text-sm font-semibold mt-6 mb-1")

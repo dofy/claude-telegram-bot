@@ -49,6 +49,7 @@ _DEFAULTS: dict = {
     "inbox": {
         "max_age_hours": 72,
     },
+    "system_prompts": {},
 }
 
 
@@ -176,6 +177,17 @@ class Config:
     @property
     def inbox_max_age_hours(self) -> int:
         return self.get("inbox", "max_age_hours", default=72)
+
+    def get_system_prompt(self, chat_id: int) -> str:
+        return self.get("system_prompts", str(chat_id), default="")
+
+    def set_system_prompt(self, chat_id: int, prompt: str) -> None:
+        prompts = self._data.setdefault("system_prompts", {})
+        if prompt:
+            prompts[str(chat_id)] = prompt
+        else:
+            prompts.pop(str(chat_id), None)
+        self.save()
 
     @property
     def plugins_config(self) -> dict:

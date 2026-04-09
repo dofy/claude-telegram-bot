@@ -2,6 +2,7 @@
 .venv/
 .nicegui/
 config.json
+stats.json
 inbox/
 logs/
 __pycache__/

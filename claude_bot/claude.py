@@ -87,10 +87,13 @@ def parse_output(output: str) -> tuple[str, str]:
     return "(・ω・)? brain empty... no thoughts", session_id
 
 
-async def invoke(chat_id: int, message: str) -> str:
-    """Call claude CLI and return HTML-formatted reply (with retry)."""
+async def invoke(chat_id: int, message: str) -> tuple[str, float]:
+    """Call claude CLI and return (HTML-formatted reply, elapsed_seconds)."""
+    import time as _time
+
     session_id = session.load(chat_id)
     env = cfg.claude_env()
+    sys_prompt = cfg.get_system_prompt(chat_id)
 
     cmd = [
         get_bin(),
@@ -102,10 +105,13 @@ async def invoke(chat_id: int, message: str) -> str:
         cmd.append("--dangerously-skip-permissions")
     if session_id:
         cmd += ["--resume", session_id]
+    if sys_prompt:
+        cmd += ["--append-system-prompt", sys_prompt]
 
     max_attempts = cfg.claude_max_retries + 1
     backoff = [1, 3, 5]
     last_error = ""
+    t0 = _time.monotonic()
 
     for attempt in range(max_attempts):
         log.info(
@@ -130,7 +136,8 @@ async def invoke(chat_id: int, message: str) -> str:
                 log.info("[%d] Retrying in %ds...", chat_id, delay)
                 await asyncio.sleep(delay)
                 continue
-            return f"(ಥ﹏ಥ) failed to start claude: {e}"
+            elapsed = _time.monotonic() - t0
+            return f"(ಥ﹏ಥ) failed to start claude: {e}", elapsed
 
         output = stdout.decode("utf-8", errors="replace")
         log.info(
@@ -156,6 +163,8 @@ async def invoke(chat_id: int, message: str) -> str:
         raw_text, new_session_id = parse_output(output)
         if new_session_id:
             session.save(chat_id, new_session_id)
-        return md_to_html(raw_text)
+        elapsed = _time.monotonic() - t0
+        return md_to_html(raw_text), elapsed
 
-    return f"(ಥ﹏ಥ) claude failed after {max_attempts} attempts: {last_error}"
+    elapsed = _time.monotonic() - t0
+    return f"(ಥ﹏ಥ) claude failed after {max_attempts} attempts: {last_error}", elapsed

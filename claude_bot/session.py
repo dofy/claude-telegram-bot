@@ -54,3 +54,21 @@ def clear(chat_id: int) -> None:
     _sessions.pop(chat_id, None)
     _last_active.pop(chat_id, None)
     _path_for(chat_id).unlink(missing_ok=True)
+
+
+def list_active() -> list[dict]:
+    """Return info about all known sessions."""
+    now = time.time()
+    ttl = _ttl_seconds()
+    result = []
+    for cid, sid in list(_sessions.items()):
+        last = _last_active.get(cid, 0)
+        if ttl and now - last > ttl:
+            continue
+        idle_min = int((now - last) / 60) if last else 0
+        result.append({
+            "chat_id": cid,
+            "session_id": sid[:12] + "…",
+            "idle_min": idle_min,
+        })
+    return result

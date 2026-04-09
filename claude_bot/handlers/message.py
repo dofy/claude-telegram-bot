@@ -11,6 +11,7 @@ from ..acl import is_allowed_group, is_owner
 from ..claude import invoke
 from ..config import BASE_DIR, cfg
 from ..sender import send_reply
+from ..stats import stats
 
 log = logging.getLogger("claude_bot.handlers.message")
 
@@ -19,15 +20,28 @@ INBOX_DIR = BASE_DIR / "inbox"
 _REJECT = "🙀 (｀Д´) nope nope nope!!"
 
 
+def _fmt_elapsed(seconds: float) -> str:
+    if seconds < 60:
+        return f"{seconds:.1f}s"
+    m, s = divmod(int(seconds), 60)
+    return f"{m}m{s}s"
+
+
 async def _handle_message(
     chat_id: int, text: str, update: Update, ctx: ContextTypes.DEFAULT_TYPE
 ) -> None:
+    stats.record_message()
     msgs = cfg.active_thinking_messages
     if msgs and update.message:
         await update.message.reply_text(random.choice(msgs))
     await ctx.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
-    reply_html = await invoke(chat_id, text)
+    reply_html, elapsed = await invoke(chat_id, text)
+    stats.record_claude_call(elapsed)
     await send_reply(ctx.bot, chat_id, reply_html)
+    if update.message:
+        await update.message.reply_text(
+            f"⏱ {_fmt_elapsed(elapsed)}",
+        )
 
 
 async def text_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
