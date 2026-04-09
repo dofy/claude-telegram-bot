@@ -191,27 +191,9 @@ def admin_page(request: Request) -> RedirectResponse | None:
     if active_tab not in _TAB_BUILDERS:
         active_tab = "secrets"
 
-    # Drawer for small screens
-    with ui.left_drawer(value=False).classes(
-        "bg-[#18181b] border-r border-zinc-800"
-    ).props("breakpoint=800 bordered") as drawer:
-        ui.label("Navigation").classes("text-sm text-gray-400 px-4 pt-4 pb-2")
-        for slug, label, icon in _TAB_DEFS:
-            def _nav(s=slug):
-                tabs.value = s
-                drawer.hide()
-            with ui.item(on_click=_nav).classes("px-4"):
-                with ui.item_section().props("avatar"):
-                    ui.icon(icon, size="20px")
-                with ui.item_section():
-                    ui.label(label).classes("text-sm")
-
     with ui.header().classes(
         "items-center bg-[#18181b] border-b border-zinc-800"
     ):
-        ui.button(icon="menu", on_click=drawer.toggle).props(
-            "flat round color=grey"
-        ).classes("lg:hidden")
         ui.icon("smart_toy", color="red", size="28px")
         ui.label("Claude Bot").classes("text-lg font-bold")
         ui.label("Admin").classes("text-red-500 text-sm ml-1")
@@ -226,31 +208,22 @@ def admin_page(request: Request) -> RedirectResponse | None:
         ).tooltip("Logout")
 
     with ui.column().classes("w-full max-w-5xl mx-auto p-4 sm:p-6"):
-        tab_map: dict[str, ui.tab] = {}
-        with ui.tabs().classes("w-full hidden sm:flex") as tabs:
+        with ui.tabs().classes("w-full").props(
+            "dense inline-label mobile-arrows outside-arrows"
+        ) as tabs:
             for slug, label, icon in _TAB_DEFS:
-                tab_map[slug] = ui.tab(slug, label=label, icon=icon)
-
-        # Tabs for small screens (icon only, scrollable)
-        with ui.tabs().classes("w-full sm:hidden").props("dense") as tabs_sm:
-            for slug, label, icon in _TAB_DEFS:
-                ui.tab(slug, icon=icon).tooltip(label)
+                ui.tab(slug, label=label, icon=icon)
 
         tabs.value = active_tab
-        tabs_sm.value = active_tab
 
         def on_tab_change(e):
-            slug = e.value
-            tabs.value = slug
-            tabs_sm.value = slug
             ui.run_javascript(
-                f"history.replaceState(null, '', '/?tab={slug}')"
+                f"history.replaceState(null, '', '/?tab={e.value}')"
             )
 
         tabs.on_value_change(on_tab_change)
-        tabs_sm.on_value_change(on_tab_change)
 
-        with ui.tab_panels(tabs, value=active_tab).classes("w-full").bind_value(tabs_sm, "value"):
+        with ui.tab_panels(tabs, value=active_tab).classes("w-full"):
             for slug, _, _ in _TAB_DEFS:
                 with ui.tab_panel(slug):
                     _TAB_BUILDERS[slug]()
