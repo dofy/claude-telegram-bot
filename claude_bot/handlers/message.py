@@ -1,7 +1,6 @@
 """Private chat message handlers: text + media."""
 
 import logging
-import random
 
 from telegram import Update
 from telegram.constants import ChatAction
@@ -9,9 +8,10 @@ from telegram.ext import Application, ContextTypes, MessageHandler, filters
 
 from ..acl import is_allowed_group, is_owner
 from ..claude import invoke
-from ..config import BASE_DIR, cfg
+from ..config import BASE_DIR
 from ..sender import send_reply
-from ..stats import stats
+from ..plugins.stats import stats
+from ..plugins.thinking import get_random_message
 
 log = logging.getLogger("claude_bot.handlers.message")
 
@@ -31,17 +31,15 @@ async def _handle_message(
     chat_id: int, text: str, update: Update, ctx: ContextTypes.DEFAULT_TYPE
 ) -> None:
     stats.record_message()
-    msgs = cfg.active_thinking_messages
-    if msgs and update.message:
-        await update.message.reply_text(random.choice(msgs))
+    thinking = get_random_message()
+    if thinking and update.message:
+        await update.message.reply_text(thinking)
     await ctx.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
     reply_html, elapsed = await invoke(chat_id, text)
     stats.record_claude_call(elapsed)
     await send_reply(ctx.bot, chat_id, reply_html)
     if update.message:
-        await update.message.reply_text(
-            f"⏱ {_fmt_elapsed(elapsed)}",
-        )
+        await update.message.reply_text(f"⏱ {_fmt_elapsed(elapsed)}")
 
 
 async def text_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:

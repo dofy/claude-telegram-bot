@@ -1,9 +1,7 @@
 """Application assembly and entry point."""
 
 import logging
-import traceback
 
-from telegram import Update
 from telegram.ext import Application, ContextTypes
 
 from .config import cfg, BASE_DIR
@@ -51,7 +49,7 @@ def _banner(log: logging.Logger) -> None:
         "  Paths",
         "  ├─ Base     :  {}".format(BASE_DIR),
         "  ├─ Config   :  {}".format(cfg._path),
-        "  └─ Logs     :  {}".format(cfg.log_dir),
+        "  └─ Data     :  {}".format(cfg.log_dir),
     ]
 
     if admin_url:
@@ -80,9 +78,9 @@ def create_app() -> Application:
     app = Application.builder().token(cfg.bot_token).build()
     app.add_error_handler(_error_handler)
     commands.register(app)
+    plugins.load_all(app)
     message.register(app)
     group.register(app)
-    plugins.load_all(app)
 
     cleanup_inbox()
     if app.job_queue:

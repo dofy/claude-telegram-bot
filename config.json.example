@@ -1,6 +1,6 @@
 {
   "log": {
-    "dir": "./logs",
+    "dir": "./data",
     "rotation": "daily",
     "keep_days": 30,
     "level": "INFO"
@@ -24,10 +24,11 @@
     { "text": "🍜 (づ｡◕‿‿◕｡)づ stirring the brain soup~", "enabled": true }
   ],
   "plugins": {
-    "admin_api": {
-      "enabled": true,
-      "port": 9981
-    }
+    "admin_api": { "enabled": true, "port": 9981 },
+    "scheduler": { "enabled": true },
+    "stats": { "enabled": true },
+    "thinking": { "enabled": true },
+    "management": { "enabled": true }
   },
   "claude": {
     "dangerously_skip_permissions": true,

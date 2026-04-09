@@ -1,4 +1,9 @@
-"""Plugin discovery and lifecycle management."""
+"""Plugin discovery and lifecycle management.
+
+Design: ALL discovered plugins are always registered at startup.
+Enable/disable is a runtime flag — checked by guard() on command handlers
+and is_enabled() in business logic.  No restart needed to toggle plugins.
+"""
 
 import importlib
 import logging
@@ -12,7 +17,7 @@ from ..config import cfg
 
 log = logging.getLogger("claude_bot.plugins")
 
-_loaded: dict[str, Plugin] = {}
+_plugins: dict[str, Plugin] = {}
 
 
 def discover() -> dict[str, Plugin]:
@@ -32,20 +37,27 @@ def discover() -> dict[str, Plugin]:
 
 
 def load_all(app: Application) -> None:
-    """Discover and register all enabled plugins."""
+    """Discover and register ALL plugins. Enable/disable is runtime-only."""
+    global _plugins
+    _plugins = discover()
     plugins_cfg = cfg.plugins_config
-    for name, plugin in discover().items():
+
+    for name, plugin in _plugins.items():
         pcfg = plugins_cfg.get(name, {})
-        if not pcfg.get("enabled", True):
-            log.info("Plugin %s is disabled, skipping", name)
-            continue
+        enabled = pcfg.get("enabled", True)
         try:
             plugin.register(app, pcfg)
-            _loaded[name] = plugin
-            log.info("Plugin loaded: %s", name)
+            log.info("Plugin registered: %s (enabled=%s)", name, enabled)
         except Exception as e:
             log.error("Plugin %s failed to register: %s", name, e)
 
+    for name, plugin in _plugins.items():
+        try:
+            plugin.on_app_ready(app)
+        except Exception as e:
+            log.error("Plugin %s on_app_ready failed: %s", name, e)
+
 
 def get_loaded() -> dict[str, Plugin]:
-    return _loaded.copy()
+    """Return all registered plugins (enabled or not)."""
+    return _plugins.copy()

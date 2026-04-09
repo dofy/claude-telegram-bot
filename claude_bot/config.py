@@ -28,7 +28,7 @@ _DEFAULT_THINKING = [
 
 _DEFAULTS: dict = {
     "log": {
-        "dir": "./logs",
+        "dir": "./data",
         "rotation": "daily",
         "keep_days": 30,
         "level": "INFO",
@@ -40,6 +40,10 @@ _DEFAULTS: dict = {
     "thinking_messages": _DEFAULT_THINKING,
     "plugins": {
         "admin_api": {"enabled": True, "port": 8080},
+        "scheduler": {"enabled": True},
+        "stats": {"enabled": True},
+        "thinking": {"enabled": True},
+        "management": {"enabled": True},
     },
     "claude": {
         "dangerously_skip_permissions": True,
@@ -144,7 +148,7 @@ class Config:
 
     @property
     def log_dir(self) -> str:
-        return self.get("log", "dir", default="./logs")
+        return self.get("log", "dir", default="./data")
 
     @property
     def log_rotation(self) -> str:
