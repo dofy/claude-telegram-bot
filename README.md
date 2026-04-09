@@ -11,7 +11,10 @@ A Telegram bot that forwards messages to [Claude Code](https://claude.ai/code) a
 - **Group support** — responds in group chats when mentioned (`@botname`) or via `/ask`
 - **Markdown → HTML** — converts Claude's Markdown output to Telegram-compatible HTML
 - **Plugin system** — extend or disable features via config
-- **Admin web panel** — manage config, ACL, thinking messages, and view logs from a browser
+- **Admin web panel** — NiceGUI-based UI with token auth and rate limiting
+- **Auto-retry** — Claude CLI failures retry with exponential backoff
+- **Session TTL** — conversations auto-expire after configurable idle time
+- **Inbox cleanup** — downloaded media files auto-deleted after configurable age
 - **Log rotation** — daily/weekly log files with configurable retention
 
 ## Prerequisites
@@ -47,24 +50,26 @@ cp config.json.example config.json
 
 ### `.env` variables
 
-| Variable               | Required | Description              |
-| ---------------------- | -------- | ------------------------ |
-| `BOT_TOKEN`            | Yes      | Telegram bot token       |
-| `ANTHROPIC_API_KEY`    | \*       | Direct Anthropic access  |
-| `ANTHROPIC_AUTH_TOKEN` | \*       | OpenRouter / proxy token |
-| `ANTHROPIC_BASE_URL`   | No       | Custom API endpoint      |
+| Variable               | Required | Description                              |
+| ---------------------- | -------- | ---------------------------------------- |
+| `BOT_TOKEN`            | Yes      | Telegram bot token                       |
+| `ANTHROPIC_API_KEY`    | \*       | Direct Anthropic access                  |
+| `ANTHROPIC_AUTH_TOKEN` | \*       | OpenRouter / proxy token                 |
+| `ANTHROPIC_BASE_URL`   | No       | Custom API endpoint                      |
+| `ADMIN_TOKEN`          | No       | Admin panel login token (empty = no auth)|
 
 \* One of `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` is required.
 
 ### `config.json` structure
 
-| Section             | Key fields                                             |
-| ------------------- | ------------------------------------------------------ |
-| `acl`               | `owner_chat_id`, `allowed_group_ids`                   |
-| `log`               | `dir`, `rotation` (daily/weekly), `keep_days`, `level` |
-| `thinking_messages` | Array of random status messages                        |
-| `plugins`           | Plugin enable/disable and per-plugin config            |
-| `claude`            | `dangerously_skip_permissions`                         |
+| Section             | Key fields                                                  |
+| ------------------- | ----------------------------------------------------------- |
+| `acl`               | `owner_chat_id`, `allowed_group_ids`                        |
+| `log`               | `dir`, `rotation` (daily/weekly), `keep_days`, `level`      |
+| `thinking_messages` | Array of random status messages                             |
+| `plugins`           | Plugin enable/disable and per-plugin config                 |
+| `claude`            | `dangerously_skip_permissions`, `max_retries`, `session_ttl_hours` |
+| `inbox`             | `max_age_hours` (auto-delete downloaded media, default 72)  |
 
 > You can also manage config via the **Admin Web Panel** at `http://127.0.0.1:8080`.
 
@@ -105,6 +110,7 @@ launchctl unload ~/Library/LaunchAgents/com.seven.claude-telegram-bot.plist
 │   ├── formatter.py        # Markdown → HTML
 │   ├── sender.py           # Message chunking & sending
 │   ├── acl.py              # Access control
+│   ├── cleanup.py          # Inbox media cleanup
 │   ├── handlers/
 │   │   ├── commands.py     # /start, /status, /reset...
 │   │   ├── message.py      # Private text + media
