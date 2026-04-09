@@ -53,8 +53,6 @@ for _gid in os.environ.get("ALLOWED_GROUP_IDS", "").split(","):
     if _gid:
         ALLOWED_GROUP_IDS.add(int(_gid))
 
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-ANTHROPIC_BASE_URL = os.environ.get("ANTHROPIC_BASE_URL", "")
 CONTEXT_LENGTH = int(os.environ.get("CONTEXT_LENGTH", "3"))
 
 INBOX_DIR = SCRIPT_DIR / "inbox"
@@ -304,9 +302,6 @@ async def invoke_claude(chat_id: int, message: str) -> str:
     env = {
         "HOME": os.environ["HOME"],
         "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
-        "ANTHROPIC_API_KEY": ANTHROPIC_API_KEY,
-        "ANTHROPIC_BASE_URL": ANTHROPIC_BASE_URL,
-        "CLAUDE_BIN": CLAUDE_BIN,
     }
 
     cmd = [

@@ -39,9 +39,9 @@ cp .env.example .env
 | `BOT_TOKEN` | Yes | Telegram bot token |
 | `ALLOWED_CHAT_ID` | Yes | Your personal Telegram chat ID |
 | `ALLOWED_GROUP_IDS` | No | Comma-separated group IDs |
-| `ANTHROPIC_API_KEY` | Yes | API key |
-| `ANTHROPIC_BASE_URL` | No | Custom endpoint (e.g. OpenRouter) |
 | `CONTEXT_LENGTH` | No | Conversation rounds to keep (default: 3) |
+
+> **API credentials** are managed by Claude Code itself (`claude config set`), not by this bot.
 
 To find your chat ID, message [@userinfobot](https://t.me/userinfobot).
 
