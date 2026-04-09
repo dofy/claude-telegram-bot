@@ -115,6 +115,12 @@ def _apply_theme():
         '"https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">'
         '<script src='
         '"https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>'
+        '<script>'
+        'document.addEventListener("DOMContentLoaded", () => {'
+        '  const run = () => { if(window.hljs) hljs.highlightAll(); else setTimeout(run, 100); };'
+        '  run();'
+        '});'
+        '</script>'
     )
 
 
@@ -160,18 +166,6 @@ def admin_page(request: Request) -> RedirectResponse | None:
 
     _apply_theme()
 
-    with ui.header().classes("items-center bg-[#18181b] border-b border-zinc-800"):
-        ui.icon("smart_toy", color="red", size="28px")
-        ui.label("Claude Bot").classes("text-lg font-bold")
-        ui.label("Admin").classes("text-red-500 text-sm ml-1")
-        ui.space()
-
-        def logout():
-            nicegui_app.storage.user["authenticated"] = False
-            ui.navigate.to("/login")
-
-        ui.button(icon="logout", on_click=logout).props("flat round color=grey").tooltip("Logout")
-
     _TAB_DEFS = [
         ("secrets", "Secrets", "key"),
         ("acl", "ACL", "shield"),
@@ -197,23 +191,66 @@ def admin_page(request: Request) -> RedirectResponse | None:
     if active_tab not in _TAB_BUILDERS:
         active_tab = "secrets"
 
-    with ui.column().classes("w-full max-w-5xl mx-auto p-6"):
+    # Drawer for small screens
+    with ui.left_drawer(value=False).classes(
+        "bg-[#18181b] border-r border-zinc-800"
+    ).props("breakpoint=800 bordered") as drawer:
+        ui.label("Navigation").classes("text-sm text-gray-400 px-4 pt-4 pb-2")
+        for slug, label, icon in _TAB_DEFS:
+            def _nav(s=slug):
+                tabs.value = s
+                drawer.hide()
+            with ui.item(on_click=_nav).classes("px-4"):
+                with ui.item_section().props("avatar"):
+                    ui.icon(icon, size="20px")
+                with ui.item_section():
+                    ui.label(label).classes("text-sm")
+
+    with ui.header().classes(
+        "items-center bg-[#18181b] border-b border-zinc-800"
+    ):
+        ui.button(icon="menu", on_click=drawer.toggle).props(
+            "flat round color=grey"
+        ).classes("lg:hidden")
+        ui.icon("smart_toy", color="red", size="28px")
+        ui.label("Claude Bot").classes("text-lg font-bold")
+        ui.label("Admin").classes("text-red-500 text-sm ml-1")
+        ui.space()
+
+        def logout():
+            nicegui_app.storage.user["authenticated"] = False
+            ui.navigate.to("/login")
+
+        ui.button(icon="logout", on_click=logout).props(
+            "flat round color=grey"
+        ).tooltip("Logout")
+
+    with ui.column().classes("w-full max-w-5xl mx-auto p-4 sm:p-6"):
         tab_map: dict[str, ui.tab] = {}
-        with ui.tabs().classes("w-full") as tabs:
+        with ui.tabs().classes("w-full hidden sm:flex") as tabs:
             for slug, label, icon in _TAB_DEFS:
                 tab_map[slug] = ui.tab(slug, label=label, icon=icon)
 
+        # Tabs for small screens (icon only, scrollable)
+        with ui.tabs().classes("w-full sm:hidden").props("dense") as tabs_sm:
+            for slug, label, icon in _TAB_DEFS:
+                ui.tab(slug, icon=icon).tooltip(label)
+
         tabs.value = active_tab
+        tabs_sm.value = active_tab
 
         def on_tab_change(e):
             slug = e.value
+            tabs.value = slug
+            tabs_sm.value = slug
             ui.run_javascript(
                 f"history.replaceState(null, '', '/?tab={slug}')"
             )
 
         tabs.on_value_change(on_tab_change)
+        tabs_sm.on_value_change(on_tab_change)
 
-        with ui.tab_panels(tabs, value=active_tab).classes("w-full"):
+        with ui.tab_panels(tabs, value=active_tab).classes("w-full").bind_value(tabs_sm, "value"):
             for slug, _, _ in _TAB_DEFS:
                 with ui.tab_panel(slug):
                     _TAB_BUILDERS[slug]()
@@ -700,8 +737,6 @@ def _code_block(text: str, lang: str = ""):
             ui.button(icon="content_copy", on_click=_copy).props(
                 "flat dense round size=sm color=grey"
             ).classes("mt-1 mr-1").tooltip("Copy all")
-
-    ui.run_javascript("hljs.highlightAll()")
 
 
 # ── Plugin class ──────────────────────────────────────────────────────────────

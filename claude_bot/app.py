@@ -1,7 +1,9 @@
 """Application assembly and entry point."""
 
 import logging
+import traceback
 
+from telegram import Update
 from telegram.ext import Application, ContextTypes
 
 from .config import cfg, BASE_DIR
@@ -10,11 +12,17 @@ from .cleanup import cleanup_inbox
 from . import plugins
 from .handlers import commands, message, group
 
+log = logging.getLogger("claude_bot")
+
 __version__ = "0.3.0"
 
 
 async def _periodic_cleanup(_ctx: ContextTypes.DEFAULT_TYPE) -> None:
     cleanup_inbox()
+
+
+async def _error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    log.error("Unhandled exception: %s", context.error, exc_info=context.error)
 
 
 def _banner(log: logging.Logger) -> None:
@@ -70,6 +78,7 @@ def _banner(log: logging.Logger) -> None:
 
 def create_app() -> Application:
     app = Application.builder().token(cfg.bot_token).build()
+    app.add_error_handler(_error_handler)
     commands.register(app)
     message.register(app)
     group.register(app)
