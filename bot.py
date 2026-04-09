@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
-from telegram import ChatAction, Update
+from telegram import Update
 from telegram.constants import ChatAction as ChatActionEnum
 from telegram.ext import (
     Application,
