@@ -38,10 +38,10 @@ uv sync
 
 Bot 使用两层配置：
 
-| 文件          | 用途                                       |
-| ------------- | ------------------------------------------ |
-| `.env`        | 仅存储密钥（Bot Token、API Key）           |
-| `config.json` | 动态配置（ACL、思考消息、插件、日志等）    |
+| 文件          | 用途                                    |
+| ------------- | --------------------------------------- |
+| `.env`        | 仅存储密钥（Bot Token、API Key）        |
+| `config.json` | 动态配置（ACL、思考消息、插件、日志等） |
 
 ```bash
 cp .env.example .env
@@ -52,13 +52,13 @@ cp config.json.example config.json
 
 ### `.env` 变量
 
-| 变量                   | 必填 | 说明                                  |
-| ---------------------- | ---- | ------------------------------------- |
-| `BOT_TOKEN`            | 是   | Telegram Bot Token                    |
-| `ANTHROPIC_API_KEY`    | \*   | Anthropic 直连密钥                    |
-| `ANTHROPIC_AUTH_TOKEN` | \*   | OpenRouter / 代理 Token               |
-| `ANTHROPIC_BASE_URL`   | 否   | 自定义 API 端点                       |
-| `ADMIN_TOKEN`          | 否   | 管理面板登录 Token（留空则无需认证）  |
+| 变量                   | 必填 | 说明                                 |
+| ---------------------- | ---- | ------------------------------------ |
+| `BOT_TOKEN`            | 是   | Telegram Bot Token                   |
+| `ANTHROPIC_API_KEY`    | \*   | Anthropic 直连密钥                   |
+| `ANTHROPIC_AUTH_TOKEN` | \*   | OpenRouter / 代理 Token              |
+| `ANTHROPIC_BASE_URL`   | 否   | 自定义 API 端点                      |
+| `ADMIN_TOKEN`          | 否   | 管理面板登录 Token（留空则无需认证） |
 
 \* `ANTHROPIC_API_KEY` 和 `ANTHROPIC_AUTH_TOKEN` 至少需要配置一个。
 
@@ -153,15 +153,15 @@ plugin = MyPlugin()
 
 ## 命令参考
 
-| 命令          | 说明                              |
-| ------------- | --------------------------------- |
-| `/start`      | 显示欢迎消息                      |
-| `/help`       | 同 /start                         |
-| `/status`     | 检查 Bot 状态（主机名 + 时间）    |
-| `/sysinfo`    | 显示 Claude 版本、Node、macOS 信息|
-| `/reset`      | 清除当前对话会话                  |
-| `/stop`       | 关闭 Bot 进程                     |
-| `/ask <文本>` | （群聊）向 Claude 提问            |
+| 命令          | 说明                               |
+| ------------- | ---------------------------------- |
+| `/start`      | 显示欢迎消息                       |
+| `/help`       | 同 /start                          |
+| `/status`     | 检查 Bot 状态（主机名 + 时间）     |
+| `/sysinfo`    | 显示 Claude 版本、Node、macOS 信息 |
+| `/reset`      | 清除当前对话会话                   |
+| `/stop`       | 关闭 Bot 进程                      |
+| `/ask <文本>` | （群聊）向 Claude 提问             |
 
 ## 群聊设置
 
