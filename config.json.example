@@ -10,26 +10,20 @@
     "allowed_group_ids": []
   },
   "thinking_messages": [
-    "⏳ ꉂ ೭(˵¯̴͒ꇴ¯̴͒˵)౨ thinking noises...",
-    "⚡ •̀.̫•́✧ ooh ooh on it!!",
-    "🔥 (`∀´)Ψ lemme cook~",
-    "🐾 ฅ(^ω^ฅ) purring intensifies...",
-    "💭 ( •̀ᴗ•́ )و brb big brain time!!",
-    "🌀 (°ロ°) !!! processing at max floof power",
-    "✨ (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧ manifesting ur answer rn",
-    "🎲 ₍ᐢ•ﻌ•ᐢ₎ rolling the dice of intelligence...",
-    "🍜 (づ｡◕‿‿◕｡)づ stirring the brain soup~",
-    "🔮 (　˘ω˘ ) peering into the void for u",
-    "🚀 ε=ε=ε=┌(;￣▽￣)┘ zooming thru knowledge base!!",
-    "💡 (¬‿¬ ) ohhhh i have a GALAXY brain idea",
-    "🐱 ฅ•ω•ฅ nyaa~ crunching the numbers",
-    "🎯 (⌐■_■) target acquired. computing...",
-    "🌊 〰️(oᴗo〰️) riding the wave of computation~"
+    {"text": "⏳ ꉂ ೭(˵¯̴͒ꇴ¯̴͒˵)౨ thinking noises...", "enabled": true},
+    {"text": "⚡ •̀.̫•́✧ ooh ooh on it!!", "enabled": true},
+    {"text": "🔥 (`∀´)Ψ lemme cook~", "enabled": true},
+    {"text": "🐾 ฅ(^ω^ฅ) purring intensifies...", "enabled": true},
+    {"text": "💭 ( •̀ᴗ•́ )و brb big brain time!!", "enabled": true},
+    {"text": "🌀 (°ロ°) !!! processing at max floof power", "enabled": true},
+    {"text": "✨ (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧ manifesting ur answer rn", "enabled": true},
+    {"text": "🎲 ₍ᐢ•ﻌ•ᐢ₎ rolling the dice of intelligence...", "enabled": true},
+    {"text": "🍜 (づ｡◕‿‿◕｡)づ stirring the brain soup~", "enabled": true}
   ],
   "plugins": {
     "admin_api": {
       "enabled": true,
-      "port": 8080
+      "port": 9981
     }
   },
   "claude": {

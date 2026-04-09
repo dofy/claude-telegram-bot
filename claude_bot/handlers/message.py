@@ -22,7 +22,7 @@ _REJECT = "🙀 (｀Д´) nope nope nope!!"
 async def _handle_message(
     chat_id: int, text: str, update: Update, ctx: ContextTypes.DEFAULT_TYPE
 ) -> None:
-    msgs = cfg.thinking_messages
+    msgs = cfg.active_thinking_messages
     if msgs:
         await update.message.reply_text(random.choice(msgs))
     await ctx.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)

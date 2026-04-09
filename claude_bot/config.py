@@ -9,21 +9,21 @@ BASE_DIR = Path(__file__).parent.parent.resolve()
 load_dotenv(BASE_DIR / ".env")
 
 _DEFAULT_THINKING = [
-    "⏳ ꉂ ೭(˵¯̴͒ꇴ¯̴͒˵)౨ thinking noises...",
-    "⚡ •̀.̫•́✧ ooh ooh on it!!",
-    "🔥 (`∀´)Ψ lemme cook~",
-    "🐾 ฅ(^ω^ฅ) purring intensifies...",
-    "💭 ( •̀ᴗ•́ )و brb big brain time!!",
-    "🌀 (°ロ°) !!! processing at max floof power",
-    "✨ (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧ manifesting ur answer rn",
-    "🎲 ₍ᐢ•ﻌ•ᐢ₎ rolling the dice of intelligence...",
-    "🍜 (づ｡◕‿‿◕｡)づ stirring the brain soup~",
-    "🔮 (　˘ω˘ ) peering into the void for u",
-    "🚀 ε=ε=ε=┌(;￣▽￣)┘ zooming thru knowledge base!!",
-    "💡 (¬‿¬ ) ohhhh i have a GALAXY brain idea",
-    "🐱 ฅ•ω•ฅ nyaa~ crunching the numbers",
-    "🎯 (⌐■_■) target acquired. computing...",
-    "🌊 〰️(oᴗo〰️) riding the wave of computation~",
+    {"text": "⏳ ꉂ ೭(˵¯̴͒ꇴ¯̴͒˵)౨ thinking noises...", "enabled": True},
+    {"text": "⚡ •̀.̫•́✧ ooh ooh on it!!", "enabled": True},
+    {"text": "🔥 (`∀´)Ψ lemme cook~", "enabled": True},
+    {"text": "🐾 ฅ(^ω^ฅ) purring intensifies...", "enabled": True},
+    {"text": "💭 ( •̀ᴗ•́ )و brb big brain time!!", "enabled": True},
+    {"text": "🌀 (°ロ°) !!! processing at max floof power", "enabled": True},
+    {"text": "✨ (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧ manifesting ur answer rn", "enabled": True},
+    {"text": "🎲 ₍ᐢ•ﻌ•ᐢ₎ rolling the dice of intelligence...", "enabled": True},
+    {"text": "🍜 (づ｡◕‿‿◕｡)づ stirring the brain soup~", "enabled": True},
+    {"text": "🔮 (　˘ω˘ ) peering into the void for u", "enabled": True},
+    {"text": "🚀 ε=ε=ε=┌(;￣▽￣)┘ zooming thru knowledge base!!", "enabled": True},
+    {"text": "💡 (¬‿¬ ) ohhhh i have a GALAXY brain idea", "enabled": True},
+    {"text": "🐱 ฅ•ω•ฅ nyaa~ crunching the numbers", "enabled": True},
+    {"text": "🎯 (⌐■_■) target acquired. computing...", "enabled": True},
+    {"text": "🌊 〰️(oᴗo〰️) riding the wave of computation~", "enabled": True},
 ]
 
 _DEFAULTS: dict = {
@@ -75,7 +75,7 @@ class Config:
             with open(self._path) as f:
                 file_data = json.load(f)
         self._data = _deep_merge(_DEFAULTS, file_data)
-        # Migrate from .env on first run
+        self._migrate_thinking_messages()
         if not self._data["acl"]["owner_chat_id"]:
             env_id = os.environ.get("ALLOWED_CHAT_ID", "")
             if env_id:
@@ -125,9 +125,21 @@ class Config:
     def allowed_group_ids(self) -> set[int]:
         return set(self.get("acl", "allowed_group_ids", default=[]))
 
+    def _migrate_thinking_messages(self) -> None:
+        """Convert old plain-string format to {text, enabled} objects."""
+        msgs = self._data.get("thinking_messages", [])
+        if msgs and isinstance(msgs[0], str):
+            self._data["thinking_messages"] = [
+                {"text": m, "enabled": True} for m in msgs
+            ]
+
     @property
-    def thinking_messages(self) -> list[str]:
+    def thinking_messages(self) -> list[dict]:
         return self.get("thinking_messages", default=[])
+
+    @property
+    def active_thinking_messages(self) -> list[str]:
+        return [m["text"] for m in self.thinking_messages if m.get("enabled", True)]
 
     @property
     def log_dir(self) -> str:

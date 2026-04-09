@@ -181,29 +181,29 @@ def admin_page(request: Request) -> RedirectResponse | None:
         "logs": _build_logs_panel,
     }
 
-    hash_val = request.query_params.get("tab", "secrets")
-    if hash_val not in _TAB_BUILDERS:
-        hash_val = "secrets"
+    active_tab = request.query_params.get("tab", "secrets")
+    if active_tab not in _TAB_BUILDERS:
+        active_tab = "secrets"
 
     with ui.column().classes("w-full max-w-5xl mx-auto p-6"):
         tab_map: dict[str, ui.tab] = {}
         with ui.tabs().classes("w-full") as tabs:
             for slug, label, icon in _TAB_DEFS:
-                tab_map[slug] = ui.tab(label, icon=icon)
+                tab_map[slug] = ui.tab(slug, label=label, icon=icon)
 
-        def on_tab_change():
-            for slug, tab in tab_map.items():
-                if tabs.value == tab.text:
-                    ui.run_javascript(
-                        f"history.replaceState(null, '', '/?tab={slug}')"
-                    )
-                    break
+        tabs.value = active_tab
+
+        def on_tab_change(e):
+            slug = e.value
+            ui.run_javascript(
+                f"history.replaceState(null, '', '/?tab={slug}')"
+            )
 
         tabs.on_value_change(on_tab_change)
 
-        with ui.tab_panels(tabs, value=tab_map[hash_val]).classes("w-full"):
+        with ui.tab_panels(tabs, value=active_tab).classes("w-full"):
             for slug, _, _ in _TAB_DEFS:
-                with ui.tab_panel(tab_map[slug]):
+                with ui.tab_panel(slug):
                     _TAB_BUILDERS[slug]()
 
 
@@ -343,16 +343,15 @@ def _build_acl_panel():
 
 
 def _build_thinking_panel():
-    msgs: list[str] = list(cfg.thinking_messages)
+    msgs: list[dict] = [dict(m) for m in cfg.thinking_messages]
     container = ui.column().classes("w-full gap-2")
-    count_label: list[ui.label] = []
 
     def _persist():
         cfg.set_value(["thinking_messages"], msgs)
 
-    def _update_count():
-        if count_label:
-            count_label[0].text = f"{len(msgs)} messages"
+    def _count_text():
+        enabled = sum(1 for m in msgs if m.get("enabled", True))
+        return f"{enabled}/{len(msgs)} enabled"
 
     def render():
         container.clear()
@@ -361,39 +360,63 @@ def _build_thinking_panel():
                 ui.icon("chat", color="red", size="24px")
                 ui.label("Thinking Messages").classes("text-lg font-semibold")
                 ui.space()
-                lbl = ui.label(f"{len(msgs)} messages").classes(
-                    "text-xs text-gray-500"
-                )
-                count_label.clear()
-                count_label.append(lbl)
+                ui.label(_count_text()).classes("text-xs text-gray-500")
 
             ui.label(
-                "Bot picks one randomly while processing a request."
+                "Bot randomly picks one enabled message while processing."
             ).classes("text-xs text-gray-500 -mt-2 mb-2")
+
+            with ui.row().classes("gap-2 mb-2"):
+                def enable_all():
+                    for m in msgs:
+                        m["enabled"] = True
+                    _persist()
+                    render()
+                    ui.notify("All enabled", type="positive")
+
+                def disable_all():
+                    for m in msgs:
+                        m["enabled"] = False
+                    _persist()
+                    render()
+                    ui.notify("All disabled", type="info")
+
+                ui.button("Enable All", icon="check_circle",
+                          on_click=enable_all).props("flat dense size=sm")
+                ui.button("Disable All", icon="unpublished",
+                          on_click=disable_all).props("flat dense size=sm")
 
             for idx, msg in enumerate(msgs):
 
-                def _make_row(i: int, text: str):
-                    with ui.card().classes(
-                        "w-full p-2"
-                    ).props("flat bordered"):
+                def _make_row(i: int, m: dict):
+                    enabled = m.get("enabled", True)
+                    card_cls = "w-full p-2" if enabled else "w-full p-2 opacity-50"
+                    with ui.card().classes(card_cls).props("flat bordered"):
                         with ui.row().classes("w-full items-center gap-2"):
                             ui.label(f"#{i + 1}").classes(
                                 "text-xs text-gray-600 w-8 shrink-0"
                             )
-                            inp = ui.input(value=text).classes(
+
+                            def on_toggle(e, index=i):
+                                msgs[index]["enabled"] = e.value
+                                _persist()
+                                render()
+
+                            ui.switch(value=enabled, on_change=on_toggle).props(
+                                "dense color=red"
+                            ).classes("shrink-0")
+
+                            inp = ui.input(value=m["text"]).classes(
                                 "flex-grow"
-                            ).props('dense borderless')
+                            ).props("dense borderless")
 
                             def do_save(input_el=inp, index=i):
                                 v = input_el.value.strip()
                                 if not v:
-                                    ui.notify(
-                                        "Empty — use delete instead",
-                                        type="warning",
-                                    )
+                                    ui.notify("Empty — use delete instead",
+                                              type="warning")
                                     return
-                                msgs[index] = v
+                                msgs[index]["text"] = v
                                 _persist()
                                 ui.notify("Saved", type="positive")
 
@@ -403,16 +426,15 @@ def _build_thinking_panel():
                                 render()
                                 ui.notify("Deleted", type="info")
 
-                            ui.button(
-                                icon="save", on_click=do_save
-                            ).props("flat dense round size=sm color=primary")
-                            ui.button(
-                                icon="delete", on_click=do_delete
-                            ).props("flat dense round size=sm color=negative")
+                            ui.button(icon="save", on_click=do_save).props(
+                                "flat dense round size=sm color=primary"
+                            )
+                            ui.button(icon="delete", on_click=do_delete).props(
+                                "flat dense round size=sm color=negative"
+                            )
 
                 _make_row(idx, msg)
 
-            # Add new message
             with ui.card().classes("w-full p-2").props("flat bordered"):
                 with ui.row().classes("w-full items-center gap-2"):
                     ui.icon("add", color="grey", size="20px").classes(
@@ -420,21 +442,21 @@ def _build_thinking_panel():
                     )
                     new_input = ui.input(
                         placeholder="Add new thinking message..."
-                    ).classes("flex-grow").props('dense borderless')
+                    ).classes("flex-grow").props("dense borderless")
 
                     def do_add():
                         v = new_input.value.strip()
                         if not v:
                             ui.notify("Enter a message first", type="warning")
                             return
-                        msgs.append(v)
+                        msgs.append({"text": v, "enabled": True})
                         _persist()
                         render()
                         ui.notify("Added", type="positive")
 
-                    ui.button(
-                        icon="add_circle", on_click=do_add
-                    ).props("flat dense round size=sm color=primary")
+                    ui.button(icon="add_circle", on_click=do_add).props(
+                        "flat dense round size=sm color=primary"
+                    )
 
     render()
 
