@@ -144,7 +144,7 @@ def login_page() -> RedirectResponse | None:
 # ── Admin page ────────────────────────────────────────────────────────────────
 
 @ui.page("/", title="Claude Bot Admin")
-def admin_page() -> RedirectResponse | None:
+def admin_page(request: Request) -> RedirectResponse | None:
     if not _is_authenticated():
         return RedirectResponse("/login")
 
@@ -162,31 +162,49 @@ def admin_page() -> RedirectResponse | None:
 
         ui.button(icon="logout", on_click=logout).props("flat round color=grey").tooltip("Logout")
 
-    with ui.column().classes("w-full max-w-5xl mx-auto p-6"):
-        with ui.tabs().classes("w-full") as tabs:
-            secrets_tab = ui.tab("Secrets", icon="key")
-            acl_tab = ui.tab("ACL", icon="shield")
-            thinking_tab = ui.tab("Thinking", icon="chat")
-            claude_tab = ui.tab("Claude", icon="memory")
-            log_tab = ui.tab("Log", icon="tune")
-            plugins_tab = ui.tab("Plugins", icon="extension")
-            logs_tab = ui.tab("Logs", icon="terminal")
+    _TAB_DEFS = [
+        ("secrets", "Secrets", "key"),
+        ("acl", "ACL", "shield"),
+        ("thinking", "Thinking", "chat"),
+        ("claude", "Claude", "memory"),
+        ("log", "Log", "tune"),
+        ("plugins", "Plugins", "extension"),
+        ("logs", "Logs", "terminal"),
+    ]
+    _TAB_BUILDERS = {
+        "secrets": _build_secrets_panel,
+        "acl": _build_acl_panel,
+        "thinking": _build_thinking_panel,
+        "claude": _build_claude_panel,
+        "log": _build_log_panel,
+        "plugins": _build_plugins_panel,
+        "logs": _build_logs_panel,
+    }
 
-        with ui.tab_panels(tabs, value=secrets_tab).classes("w-full"):
-            with ui.tab_panel(secrets_tab):
-                _build_secrets_panel()
-            with ui.tab_panel(acl_tab):
-                _build_acl_panel()
-            with ui.tab_panel(thinking_tab):
-                _build_thinking_panel()
-            with ui.tab_panel(claude_tab):
-                _build_claude_panel()
-            with ui.tab_panel(log_tab):
-                _build_log_panel()
-            with ui.tab_panel(plugins_tab):
-                _build_plugins_panel()
-            with ui.tab_panel(logs_tab):
-                _build_logs_panel()
+    hash_val = request.query_params.get("tab", "secrets")
+    if hash_val not in _TAB_BUILDERS:
+        hash_val = "secrets"
+
+    with ui.column().classes("w-full max-w-5xl mx-auto p-6"):
+        tab_map: dict[str, ui.tab] = {}
+        with ui.tabs().classes("w-full") as tabs:
+            for slug, label, icon in _TAB_DEFS:
+                tab_map[slug] = ui.tab(label, icon=icon)
+
+        def on_tab_change():
+            for slug, tab in tab_map.items():
+                if tabs.value == tab.text:
+                    ui.run_javascript(
+                        f"history.replaceState(null, '', '/?tab={slug}')"
+                    )
+                    break
+
+        tabs.on_value_change(on_tab_change)
+
+        with ui.tab_panels(tabs, value=tab_map[hash_val]).classes("w-full"):
+            for slug, _, _ in _TAB_DEFS:
+                with ui.tab_panel(tab_map[slug]):
+                    _TAB_BUILDERS[slug]()
 
 
 # ── Panel builders ────────────────────────────────────────────────────────────
