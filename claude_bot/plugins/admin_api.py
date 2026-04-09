@@ -624,10 +624,13 @@ def _build_help_panel():
         ("Check status", f"launchctl list | grep {label_name}"),
     ]
     for title, cmd in cmds:
-        with ui.row().classes("w-full items-center gap-3 mb-1"):
-            ui.label(title).classes("w-32 text-xs text-gray-400 shrink-0")
-            code = ui.label(cmd).classes(
-                "text-xs font-mono bg-zinc-800 px-3 py-1.5 rounded flex-grow"
+        with ui.row().classes(
+            "w-full items-center gap-3 mb-1 flex-nowrap overflow-x-auto"
+        ):
+            ui.label(title).classes("w-28 text-xs text-gray-400 shrink-0")
+            ui.label(cmd).classes(
+                "text-xs font-mono bg-zinc-800 px-3 py-1.5 rounded "
+                "flex-grow whitespace-nowrap overflow-hidden text-ellipsis"
             )
 
             def _copy(text=cmd):
@@ -638,7 +641,7 @@ def _build_help_panel():
 
             ui.button(icon="content_copy", on_click=_copy).props(
                 "flat dense round size=xs"
-            ).tooltip("Copy")
+            ).classes("shrink-0").tooltip("Copy")
 
     # ── plist content ────────────────────────────────────────────────────
     ui.label("Current plist File").classes("text-sm font-semibold mt-6 mb-1")
