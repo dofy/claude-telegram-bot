@@ -14,6 +14,8 @@ _bot_username: str = ""
 
 
 async def group_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message or not update.effective_chat:
+        return
     chat_id = update.effective_chat.id
     if not is_allowed_group(chat_id):
         return

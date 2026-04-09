@@ -23,7 +23,7 @@ async def _handle_message(
     chat_id: int, text: str, update: Update, ctx: ContextTypes.DEFAULT_TYPE
 ) -> None:
     msgs = cfg.active_thinking_messages
-    if msgs:
+    if msgs and update.message:
         await update.message.reply_text(random.choice(msgs))
     await ctx.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
     reply_html = await invoke(chat_id, text)
@@ -31,6 +31,8 @@ async def _handle_message(
 
 
 async def text_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message or not update.effective_chat:
+        return
     chat_id = update.effective_chat.id
     if not is_owner(chat_id):
         await update.message.reply_text(_REJECT)
@@ -43,6 +45,8 @@ async def text_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def media_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message or not update.effective_chat:
+        return
     chat_id = update.effective_chat.id
     if not is_owner(chat_id) and not is_allowed_group(chat_id):
         await update.message.reply_text(_REJECT)

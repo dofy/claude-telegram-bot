@@ -20,6 +20,8 @@ _REJECT = "🙀 (｀Д´) nope nope nope!!"
 
 
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message or not update.effective_chat:
+        return
     if not is_owner(update.effective_chat.id):
         await update.message.reply_text(_REJECT)
         return
@@ -38,6 +40,8 @@ async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def cmd_status(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message or not update.effective_chat:
+        return
     chat_id = update.effective_chat.id
     if not is_owner(chat_id) and not is_allowed_group(chat_id):
         await update.message.reply_text(_REJECT)
@@ -52,6 +56,8 @@ async def cmd_status(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def cmd_sysinfo(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message or not update.effective_chat:
+        return
     if not is_owner(update.effective_chat.id):
         await update.message.reply_text(_REJECT)
         return
@@ -74,12 +80,14 @@ async def cmd_sysinfo(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         f"📦 Node: {node_ver}\n"
         f"🍎 macOS: {os_ver}\n"
         f"📂 工作目录: {Path.home()}\n"
-        f"⏱ 时间: {now}",
+        f"⌛️ 时间: {now}",
         parse_mode="HTML",
     )
 
 
 async def cmd_reset(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message or not update.effective_chat:
+        return
     if not is_owner(update.effective_chat.id):
         await update.message.reply_text(_REJECT)
         return
@@ -88,6 +96,8 @@ async def cmd_reset(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def cmd_stop(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message or not update.effective_chat:
+        return
     if not is_owner(update.effective_chat.id):
         await update.message.reply_text(_REJECT)
         return
