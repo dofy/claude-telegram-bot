@@ -268,9 +268,13 @@ def _parse_claude_output(output: str) -> tuple[str, str]:
             d = json.loads(line)
             t = d.get("type", "")
             if t == "result":
+                session_id = d.get("session_id", "") or session_id
                 if d.get("is_error"):
                     is_error = True
-                    error_msg = d.get("result", "未知错误")
+                    errors = d.get("errors") or []
+                    error_msg = (
+                        errors[0] if errors else d.get("result") or "未知错误"
+                    )
                 else:
                     session_id = d.get("session_id", "")
                     r = d.get("result", "")
@@ -287,7 +291,7 @@ def _parse_claude_output(output: str) -> tuple[str, str]:
             pass
 
     if is_error:
-        return f"(ಥ﹏ಥ) owie something broke: {error_msg}", session_id
+        return f"(ಥ﹏ಥ) owie something broke: {error_msg}", ""  # don't persist error session
     if text_parts:
         return "\n\n".join(text_parts), session_id
     return "(・ω・)? brain empty... no thoughts", session_id
