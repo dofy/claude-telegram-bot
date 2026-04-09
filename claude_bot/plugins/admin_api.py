@@ -1,5 +1,6 @@
 """Admin Web UI plugin — NiceGUI-based config management panel."""
 
+import html as html_mod
 import logging
 import os
 import platform
@@ -665,12 +666,13 @@ def _build_help_panel():
 
 def _code_block(text: str):
     """Render a copyable monospace code block."""
+    escaped = html_mod.escape(text)
     with ui.card().classes("w-full bg-zinc-900 p-0").props("flat bordered"):
         with ui.row().classes("w-full items-start"):
             ui.html(
                 f"<pre style='margin:0;padding:12px;overflow-x:auto;"
                 f"font-size:12px;line-height:1.5;white-space:pre-wrap;"
-                f"word-break:break-all;flex:1'>{text}</pre>"
+                f"word-break:break-all;flex:1'>{escaped}</pre>"
             ).classes("flex-grow")
 
             def _copy(t=text):
