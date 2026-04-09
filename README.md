@@ -1,5 +1,7 @@
 # Claude Telegram Bot
 
+[中文文档](README_CN.md)
+
 A Telegram bot that forwards messages to [Claude Code](https://claude.ai/code) and sends back the response. Supports multi-turn conversations, media handling, group chats, plugin system, and a web admin panel.
 
 ## Features
@@ -50,26 +52,26 @@ cp config.json.example config.json
 
 ### `.env` variables
 
-| Variable               | Required | Description                              |
-| ---------------------- | -------- | ---------------------------------------- |
-| `BOT_TOKEN`            | Yes      | Telegram bot token                       |
-| `ANTHROPIC_API_KEY`    | \*       | Direct Anthropic access                  |
-| `ANTHROPIC_AUTH_TOKEN` | \*       | OpenRouter / proxy token                 |
-| `ANTHROPIC_BASE_URL`   | No       | Custom API endpoint                      |
-| `ADMIN_TOKEN`          | No       | Admin panel login token (empty = no auth)|
+| Variable               | Required | Description                               |
+| ---------------------- | -------- | ----------------------------------------- |
+| `BOT_TOKEN`            | Yes      | Telegram bot token                        |
+| `ANTHROPIC_API_KEY`    | \*       | Direct Anthropic access                   |
+| `ANTHROPIC_AUTH_TOKEN` | \*       | OpenRouter / proxy token                  |
+| `ANTHROPIC_BASE_URL`   | No       | Custom API endpoint                       |
+| `ADMIN_TOKEN`          | No       | Admin panel login token (empty = no auth) |
 
 \* One of `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` is required.
 
 ### `config.json` structure
 
-| Section             | Key fields                                                  |
-| ------------------- | ----------------------------------------------------------- |
-| `acl`               | `owner_chat_id`, `allowed_group_ids`                        |
-| `log`               | `dir`, `rotation` (daily/weekly), `keep_days`, `level`      |
-| `thinking_messages` | Array of random status messages                             |
-| `plugins`           | Plugin enable/disable and per-plugin config                 |
+| Section             | Key fields                                                         |
+| ------------------- | ------------------------------------------------------------------ |
+| `acl`               | `owner_chat_id`, `allowed_group_ids`                               |
+| `log`               | `dir`, `rotation` (daily/weekly), `keep_days`, `level`             |
+| `thinking_messages` | Array of random status messages                                    |
+| `plugins`           | Plugin enable/disable and per-plugin config                        |
 | `claude`            | `dangerously_skip_permissions`, `max_retries`, `session_ttl_hours` |
-| `inbox`             | `max_age_hours` (auto-delete downloaded media, default 72)  |
+| `inbox`             | `max_age_hours` (auto-delete downloaded media, default 72)         |
 
 > You can also manage config via the **Admin Web Panel** at `http://127.0.0.1:8080`.
 
