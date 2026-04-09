@@ -1,0 +1,43 @@
+{
+  "log": {
+    "dir": "./logs",
+    "rotation": "daily",
+    "keep_days": 30,
+    "level": "INFO"
+  },
+  "acl": {
+    "owner_chat_id": 0,
+    "allowed_group_ids": []
+  },
+  "thinking_messages": [
+    "⏳ ꉂ ೭(˵¯̴͒ꇴ¯̴͒˵)౨ thinking noises...",
+    "⚡ •̀.̫•́✧ ooh ooh on it!!",
+    "🔥 (`∀´)Ψ lemme cook~",
+    "🐾 ฅ(^ω^ฅ) purring intensifies...",
+    "💭 ( •̀ᴗ•́ )و brb big brain time!!",
+    "🌀 (°ロ°) !!! processing at max floof power",
+    "✨ (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧ manifesting ur answer rn",
+    "🎲 ₍ᐢ•ﻌ•ᐢ₎ rolling the dice of intelligence...",
+    "🍜 (づ｡◕‿‿◕｡)づ stirring the brain soup~",
+    "🔮 (　˘ω˘ ) peering into the void for u",
+    "🚀 ε=ε=ε=┌(;￣▽￣)┘ zooming thru knowledge base!!",
+    "💡 (¬‿¬ ) ohhhh i have a GALAXY brain idea",
+    "🐱 ฅ•ω•ฅ nyaa~ crunching the numbers",
+    "🎯 (⌐■_■) target acquired. computing...",
+    "🌊 〰️(oᴗo〰️) riding the wave of computation~"
+  ],
+  "plugins": {
+    "admin_api": {
+      "enabled": true,
+      "port": 8080
+    }
+  },
+  "claude": {
+    "dangerously_skip_permissions": true,
+    "max_retries": 2,
+    "session_ttl_hours": 24
+  },
+  "inbox": {
+    "max_age_hours": 72
+  }
+}

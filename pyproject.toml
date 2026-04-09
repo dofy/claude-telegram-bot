@@ -1,7 +1,11 @@
 [project]
 name = "claude-telegram-bot"
-version = "0.1.0"
+version = "0.3.0"
 description = "Telegram bot that forwards messages to Claude Code CLI"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = ["python-telegram-bot>=20.0", "python-dotenv>=1.0"]
+dependencies = [
+    "python-telegram-bot[job-queue]>=20.0",
+    "python-dotenv>=1.0",
+    "nicegui>=2.0",
+]
