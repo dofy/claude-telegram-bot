@@ -85,7 +85,8 @@ def create_app() -> Application:
     plugins.load_all(app)
 
     cleanup_inbox()
-    app.job_queue.run_repeating(_periodic_cleanup, interval=3600, first=3600)
+    if app.job_queue:
+        app.job_queue.run_repeating(_periodic_cleanup, interval=3600, first=3600)
 
     return app
 
