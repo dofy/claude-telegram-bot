@@ -3,11 +3,14 @@
 # Requires: python-telegram-bot>=20.0, python-dotenv
 
 import asyncio
+import datetime
+import json
 import logging
 import os
+import random
 import re
+import socket
 import subprocess
-import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -34,16 +37,7 @@ log = logging.getLogger(__name__)
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
 
-# Load .env (fallback to legacy Documents path used by old bot.sh)
-_env_paths = [
-    SCRIPT_DIR / ".env",
-    Path.home() / "Documents/config/claude/telegram-bot/.env",
-]
-for _p in _env_paths:
-    if _p.exists():
-        load_dotenv(_p)
-        log.info("Loaded .env from %s", _p)
-        break
+load_dotenv(SCRIPT_DIR / ".env")
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 ALLOWED_CHAT_ID = int(os.environ["ALLOWED_CHAT_ID"])
@@ -52,8 +46,6 @@ for _gid in os.environ.get("ALLOWED_GROUP_IDS", "").split(","):
     _gid = _gid.strip()
     if _gid:
         ALLOWED_GROUP_IDS.add(int(_gid))
-
-CONTEXT_LENGTH = int(os.environ.get("CONTEXT_LENGTH", "3"))
 
 INBOX_DIR = SCRIPT_DIR / "inbox"
 
@@ -86,11 +78,11 @@ log.info("Using claude: %s", CLAUDE_BIN)
 # ── Session store (in-memory, per chat_id) ────────────────────────────────────
 
 _sessions: dict[int, str] = {}  # chat_id -> session_id
+_bot_username: str = ""
 
 SESSION_FILE_TEMPLATE = "/tmp/claude-bot-session-{}"
 
 def _load_session(chat_id: int) -> str | None:
-    # Check in-memory first, then on-disk (compat with old bot.sh)
     if chat_id in _sessions:
         return _sessions[chat_id]
     p = Path(SESSION_FILE_TEMPLATE.format(chat_id))
@@ -251,8 +243,6 @@ async def _send_files_in_text(bot, chat_id: int, text: str) -> str:
 
 def _parse_claude_output(output: str) -> tuple[str, str]:
     """Parse stream-json output. Returns (reply_text, session_id)."""
-    import json
-
     text_parts: list[str] = []
     session_id = ""
     is_error = False
@@ -274,7 +264,6 @@ def _parse_claude_output(output: str) -> tuple[str, str]:
                         errors[0] if errors else d.get("result") or "未知错误"
                     )
                 else:
-                    session_id = d.get("session_id", "")
                     r = d.get("result", "")
                     if r:
                         text_parts = [r]
@@ -303,6 +292,9 @@ async def invoke_claude(chat_id: int, message: str) -> str:
         "HOME": os.environ["HOME"],
         "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
     }
+    for k, v in os.environ.items():
+        if k.startswith("ANTHROPIC_") or k.startswith("OPENROUTER_"):
+            env[k] = v
 
     cmd = [
         CLAUDE_BIN,
@@ -321,7 +313,7 @@ async def invoke_claude(chat_id: int, message: str) -> str:
             *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            env={k: v for k, v in env.items() if v},
+            env=env,
             stdin=asyncio.subprocess.DEVNULL,
         )
         stdout, stderr = await proc.communicate()
@@ -397,13 +389,11 @@ async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def cmd_status(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
-    import datetime
     chat_id = update.effective_chat.id
     if not _is_allowed_private(chat_id) and not _is_allowed_group(chat_id):
         await update.message.reply_text("🙀 (｀Д´) nope nope nope!!")
         return
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    import socket
     hostname = socket.gethostname()
     await update.message.reply_text(
         f"ᕙ(`▿´)ᕗ pawsitively operational!!\n"
@@ -413,7 +403,6 @@ async def cmd_status(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def cmd_sysinfo(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
-    import datetime
     chat_id = update.effective_chat.id
     if not _is_allowed_private(chat_id):
         await update.message.reply_text("🙀 (｀Д´) nope nope nope!!")
@@ -479,7 +468,6 @@ _THINKING_MSGS = [
 
 
 async def _handle_message(chat_id: int, text: str, update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
-    import random
     thinking = random.choice(_THINKING_MSGS)
     await update.message.reply_text(thinking)
     # Typing indicator
@@ -543,19 +531,19 @@ async def group_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     if not _is_allowed_group(chat_id):
         return  # Silent ignore for unauthorized groups
 
+    global _bot_username
     message = update.message
     text = (message.text or "").strip()
 
-    # Determine bot username for mention detection
-    bot_username = (await ctx.bot.get_me()).username
-    mentioned = f"@{bot_username}" in text
+    if not _bot_username:
+        _bot_username = (await ctx.bot.get_me()).username
+    mentioned = f"@{_bot_username}" in text
     starts_with_ask = text.startswith("/ask")
 
     if not mentioned and not starts_with_ask:
         return  # Silent ignore
 
-    # Strip trigger prefix
-    text = text.replace(f"@{bot_username}", "").strip()
+    text = text.replace(f"@{_bot_username}", "").strip()
     if text.startswith("/ask"):
         text = text[4:].strip()
 

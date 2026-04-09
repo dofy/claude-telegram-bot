@@ -8,14 +8,21 @@
 
   <key>ProgramArguments</key>
   <array>
-    <!-- Use pyenv python path if needed:
-         /Users/yourname/.pyenv/shims/python3 -->
-    <string>/usr/bin/python3</string>
-    <string>/Users/yourname/.claude/telegram-bot/bot.py</string>
+    <string>/opt/homebrew/bin/uv</string>
+    <string>run</string>
+    <string>bot.py</string>
   </array>
 
   <key>WorkingDirectory</key>
-  <string>/Users/yourname/.claude/telegram-bot</string>
+  <string>/Users/yourname/path/to/claude-telegram-bot</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <key>HOME</key>
+    <string>/Users/yourname</string>
+  </dict>
 
   <key>RunAtLoad</key>
   <true/>

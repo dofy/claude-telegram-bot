@@ -14,8 +14,7 @@ A Telegram bot that forwards messages to [Claude Code](https://claude.ai/code) a
 
 ## Prerequisites
 
-- Python 3.11+
-- `pip` / `pyenv`
+- Python 3.14+ / [uv](https://docs.astral.sh/uv/)
 - A Telegram bot token from [@BotFather](https://t.me/BotFather)
 - Claude Code CLI installed (`claude` in PATH)
 - An Anthropic API key (or OpenRouter key)
@@ -23,23 +22,23 @@ A Telegram bot that forwards messages to [Claude Code](https://claude.ai/code) a
 ## Installation
 
 ```bash
-cd ~/.claude/telegram-bot
-pip install -r requirements.txt
+git clone https://github.com/dofy/claude-telegram-bot.git
+cd claude-telegram-bot
+uv sync
 ```
 
 ## Configuration
 
 ```bash
 cp .env.example .env
-# Edit .env and fill in your BOT_TOKEN, ALLOWED_CHAT_ID, ANTHROPIC_API_KEY
+# Edit .env and fill in your BOT_TOKEN and ALLOWED_CHAT_ID
 ```
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `BOT_TOKEN` | Yes | Telegram bot token |
-| `ALLOWED_CHAT_ID` | Yes | Your personal Telegram chat ID |
-| `ALLOWED_GROUP_IDS` | No | Comma-separated group IDs |
-| `CONTEXT_LENGTH` | No | Conversation rounds to keep (default: 3) |
+| Variable            | Required | Description                    |
+| ------------------- | -------- | ------------------------------ |
+| `BOT_TOKEN`         | Yes      | Telegram bot token             |
+| `ALLOWED_CHAT_ID`   | Yes      | Your personal Telegram chat ID |
+| `ALLOWED_GROUP_IDS` | No       | Comma-separated group IDs      |
 
 > **API credentials** are managed by Claude Code itself (`claude config set`), not by this bot.
 
@@ -50,7 +49,7 @@ To find your chat ID, message [@userinfobot](https://t.me/userinfobot).
 ### Direct
 
 ```bash
-python3 bot.py
+uv run bot.py
 ```
 
 ### With launchd (macOS auto-start)
@@ -80,12 +79,12 @@ launchctl unload ~/Library/LaunchAgents/com.seven.claude-telegram-bot.plist
 
 ## Commands Reference
 
-| Command | Description |
-|---------|-------------|
-| `/start` | Show welcome message |
-| `/help` | Same as /start |
-| `/status` | Check bot is alive (hostname + time) |
-| `/sysinfo` | Show Claude version, Node, macOS info |
-| `/reset` | Clear current conversation session |
-| `/stop` | Shut down the bot process |
-| `/ask <text>` | (Groups) Ask Claude a question |
+| Command       | Description                           |
+| ------------- | ------------------------------------- |
+| `/start`      | Show welcome message                  |
+| `/help`       | Same as /start                        |
+| `/status`     | Check bot is alive (hostname + time)  |
+| `/sysinfo`    | Show Claude version, Node, macOS info |
+| `/reset`      | Clear current conversation session    |
+| `/stop`       | Shut down the bot process             |
+| `/ask <text>` | (Groups) Ask Claude a question        |
