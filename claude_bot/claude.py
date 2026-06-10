@@ -100,6 +100,7 @@ async def invoke(chat_id: int, message: str) -> tuple[str, float]:
         "--print", message,
         "--output-format", "stream-json",
         "--verbose",
+        "--model", "claude-opus-4-8",
     ]
     if cfg.claude_skip_permissions:
         cmd.append("--dangerously-skip-permissions")
