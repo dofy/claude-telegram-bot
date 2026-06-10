@@ -169,10 +169,13 @@ plugin = MyPlugin()
 | Plugin       | Description                                     |
 | ------------ | ----------------------------------------------- |
 | `admin_api`  | Web admin panel (core, cannot be disabled)      |
+| `inline`     | Inline mode: `@botname query` from any chat     |
 | `management` | Owner commands: /reload, /sessions, /logs, etc. |
 | `scheduler`  | Scheduled tasks & reminders (/remind, /tasks)   |
 | `stats`      | Usage statistics (/usage)                       |
 | `thinking`   | Random status messages while Claude processes   |
+
+> **Inline mode setup:** in [@BotFather](https://t.me/BotFather) run `/setinline` for your bot and set a placeholder text (e.g. `ask me anything…`). The bot uses `claude.inline_model` (default `claude-haiku-4-5`) to stay within Telegram's 10-second inline timeout.
 
 ### UI Theming
 
@@ -195,6 +198,7 @@ All UI colors are defined in `claude_bot/plugins/theme.py`. Edit that single fil
 | `/config`                      | Show config summary (owner only)      |
 | `/admin`                       | Show admin panel URL (owner only)     |
 | `/prompt [text\|clear]`        | Set/view per-chat system prompt       |
+| `/model`                       | Switch Claude model for this chat     |
 | `/usage`                       | Show usage statistics                 |
 | `/remind <schedule> <message>` | Create a scheduled task/reminder      |
 | `/tasks`                       | List all scheduled tasks              |

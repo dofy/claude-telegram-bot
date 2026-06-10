@@ -40,6 +40,7 @@ _DEFAULTS: dict = {
     "thinking_messages": _DEFAULT_THINKING,
     "plugins": {
         "admin_api": {"enabled": True, "port": 8080},
+        "inline": {"enabled": True},
         "scheduler": {"enabled": True},
         "stats": {"enabled": True},
         "thinking": {"enabled": True},
@@ -50,6 +51,7 @@ _DEFAULTS: dict = {
         "max_retries": 2,
         "session_ttl_hours": 24,
         "model": "claude-opus-4-8",
+        "inline_model": "claude-haiku-4-5",
     },
     "inbox": {
         "max_age_hours": 72,
