@@ -183,6 +183,23 @@ class Config:
     def claude_model(self) -> str:
         return self.get("claude", "model", default="claude-opus-4-8")
 
+    def get_chat_model(self, chat_id: int) -> str:
+        """Return per-chat model override, falling back to global claude_model."""
+        return self.get("chat_models", str(chat_id), default=self.claude_model)
+
+    def set_chat_model(self, chat_id: int, model: str) -> None:
+        models = self._data.setdefault("chat_models", {})
+        if model:
+            models[str(chat_id)] = model
+        else:
+            models.pop(str(chat_id), None)
+        self.save()
+
+    @property
+    def inline_model(self) -> str:
+        """Fast model used for inline queries (configurable, default haiku)."""
+        return self.get("claude", "inline_model", default="claude-haiku-4-5")
+
     @property
     def inbox_max_age_hours(self) -> int:
         return self.get("inbox", "max_age_hours", default=72)

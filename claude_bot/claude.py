@@ -142,20 +142,15 @@ def parse_output(output: str) -> tuple[str, str]:
     return "(・ω・)? brain empty... no thoughts", session_id
 
 
-async def invoke(chat_id: int, message: str) -> tuple[str, float]:
-    """Call claude CLI and return (HTML-formatted reply, elapsed_seconds)."""
-    import time as _time
-
-    session_id = session.load(chat_id)
-    env = cfg.claude_env()
+def _build_cmd(chat_id: int, message: str, model: str, session_id: str | None) -> list[str]:
+    """Assemble the claude CLI command list."""
     sys_prompt = cfg.get_system_prompt(chat_id)
-
     cmd = [
         get_bin(),
         "--print", message,
         "--output-format", "stream-json",
         "--verbose",
-        "--model", cfg.claude_model,
+        "--model", model,
     ]
     if cfg.claude_skip_permissions:
         cmd.append("--dangerously-skip-permissions")
@@ -163,6 +158,17 @@ async def invoke(chat_id: int, message: str) -> tuple[str, float]:
         cmd += ["--resume", session_id]
     if sys_prompt:
         cmd += ["--append-system-prompt", sys_prompt]
+    return cmd
+
+
+async def invoke(chat_id: int, message: str, model: str | None = None) -> tuple[str, float]:
+    """Call claude CLI and return (HTML-formatted reply, elapsed_seconds)."""
+    import time as _time
+
+    session_id = session.load(chat_id)
+    env = cfg.claude_env()
+    effective_model = model or cfg.get_chat_model(chat_id)
+    cmd = _build_cmd(chat_id, message, effective_model, session_id)
 
     max_attempts = cfg.claude_max_retries + 1
     backoff = [1, 3, 5]
@@ -224,3 +230,64 @@ async def invoke(chat_id: int, message: str) -> tuple[str, float]:
 
     elapsed = _time.monotonic() - t0
     return f"(ಥ﹏ಥ) claude failed after {max_attempts} attempts: {last_error}", elapsed
+
+
+async def invoke_stream(
+    chat_id: int,
+    message: str,
+    model: str | None = None,
+) -> "AsyncGenerator[str, None]":
+    """Stream assistant text tokens as they arrive from claude CLI.
+
+    Yields incremental plain-text chunks. The caller is responsible for
+    formatting / sending. After the generator is exhausted, the session is
+    saved via side-effect inside parse_output_stream().
+    """
+    import time as _time
+    from typing import AsyncGenerator  # noqa: F401 — for the return-type hint
+
+    session_id = session.load(chat_id)
+    env = cfg.claude_env()
+    effective_model = model or cfg.get_chat_model(chat_id)
+    cmd = _build_cmd(chat_id, message, effective_model, session_id)
+
+    log.info(
+        "[%d] invoke_stream (resume=%s) len=%d",
+        chat_id, session_id or "none", len(message),
+    )
+
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        env=env,
+        stdin=asyncio.subprocess.DEVNULL,
+    )
+
+    assert proc.stdout is not None
+    accumulated = ""
+
+    async for raw_line in proc.stdout:
+        line = raw_line.decode("utf-8", errors="replace").strip()
+        if not line:
+            continue
+        try:
+            d = json.loads(line)
+        except Exception:
+            continue
+
+        t = d.get("type", "")
+        if t == "assistant":
+            for block in d.get("message", {}).get("content", []):
+                if block.get("type") == "text":
+                    chunk = block.get("text", "")
+                    if chunk:
+                        accumulated += chunk
+                        yield chunk
+        elif t == "result":
+            new_sid = d.get("session_id", "")
+            if new_sid:
+                session.save(chat_id, new_sid)
+
+    await proc.wait()
+    log.info("[%d] invoke_stream done exit=%d", chat_id, proc.returncode)
