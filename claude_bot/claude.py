@@ -44,6 +44,61 @@ def get_bin() -> str:
     return _claude_bin
 
 
+# Curated fallback list used when the router can't be reached.
+FALLBACK_MODELS = [
+    "claude-opus-4-8",
+    "claude-opus-4-7",
+    "claude-opus-4-6",
+    "claude-sonnet-4-6",
+    "claude-haiku-4-5",
+]
+
+
+def fetch_models(timeout: float = 5.0) -> tuple[list[str], str]:
+    """Fetch Claude-family model ids from the router's /v1/models endpoint.
+
+    Returns (model_ids, error). On success error is "". On failure the
+    fallback list is returned alongside a short error message.
+    """
+    import json as _json
+    import urllib.request
+
+    base = os.environ.get("ANTHROPIC_BASE_URL", "").rstrip("/")
+    if not base:
+        return list(FALLBACK_MODELS), "ANTHROPIC_BASE_URL not set"
+
+    url = f"{base}/v1/models"
+    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    req = urllib.request.Request(url)
+    if key:
+        req.add_header("x-api-key", key)
+    req.add_header("anthropic-version", "2023-06-01")
+
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            payload = _json.loads(resp.read().decode("utf-8", errors="replace"))
+    except Exception as e:
+        log.warning("fetch_models failed: %s", e)
+        return list(FALLBACK_MODELS), str(e)
+
+    data = payload.get("data") if isinstance(payload, dict) else None
+    if not isinstance(data, list):
+        return list(FALLBACK_MODELS), "unexpected response format"
+
+    ids = [
+        m["id"]
+        for m in data
+        if isinstance(m, dict) and isinstance(m.get("id"), str)
+    ]
+    claude_ids = sorted(
+        i for i in ids
+        if "claude" in i.lower() or "anthropic" in i.lower()
+    )
+    if not claude_ids:
+        return list(FALLBACK_MODELS), "no Claude models found"
+    return claude_ids, ""
+
+
 def parse_output(output: str) -> tuple[str, str]:
     """Parse stream-json output. Returns (reply_text, session_id)."""
     text_parts: list[str] = []
@@ -100,7 +155,7 @@ async def invoke(chat_id: int, message: str) -> tuple[str, float]:
         "--print", message,
         "--output-format", "stream-json",
         "--verbose",
-        "--model", "claude-opus-4-8",
+        "--model", cfg.claude_model,
     ]
     if cfg.claude_skip_permissions:
         cmd.append("--dangerously-skip-permissions")

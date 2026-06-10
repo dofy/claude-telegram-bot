@@ -49,6 +49,7 @@ _DEFAULTS: dict = {
         "dangerously_skip_permissions": True,
         "max_retries": 2,
         "session_ttl_hours": 24,
+        "model": "claude-opus-4-8",
     },
     "inbox": {
         "max_age_hours": 72,
@@ -177,6 +178,10 @@ class Config:
     @property
     def session_ttl_hours(self) -> int:
         return self.get("claude", "session_ttl_hours", default=24)
+
+    @property
+    def claude_model(self) -> str:
+        return self.get("claude", "model", default="claude-opus-4-8")
 
     @property
     def inbox_max_age_hours(self) -> int:

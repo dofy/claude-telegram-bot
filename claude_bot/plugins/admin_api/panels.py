@@ -334,7 +334,52 @@ def _build_acl_panel():
 
 @_register("claude")
 def _build_claude_panel():
+    from ...claude import fetch_models
+
     section_header("memory", "Claude Settings")
+
+    # ── Model selection ───────────────────────────────────────────────────
+    model_box = ui.column().classes("w-full gap-1")
+    selected_model = {"value": cfg.claude_model}
+
+    def render_model():
+        model_box.clear()
+        models, err = fetch_models()
+        current = cfg.claude_model
+        # Always keep the configured model selectable, even if the router
+        # didn't return it (e.g. bare name not present in /v1/models).
+        if current and current not in models:
+            models = [current] + models
+        selected_model["value"] = current
+        with model_box:
+            with ui.row().classes("w-full items-end gap-2 flex-nowrap"):
+                sel = ui.select(
+                    label="Model",
+                    options=models,
+                    value=current,
+                    with_input=True,
+                ).props(INPUT_PROPS).classes("flex-grow min-w-0")
+                sel.on(
+                    "update:model-value",
+                    lambda e: selected_model.update(value=e.args),
+                )
+                ui.button(
+                    icon="refresh", on_click=render_model
+                ).props("flat dense round size=sm color=grey").tooltip(
+                    "Reload model list from router"
+                )
+            if err:
+                ui.label(
+                    f"Couldn't reach router ({err}) — showing fallback list."
+                ).classes("text-xs text-amber-500")
+            else:
+                ui.label(
+                    f"{len(models)} Claude models available from router."
+                ).classes("text-xs text-gray-500")
+
+    render_model()
+
+    ui.separator().classes("my-2")
 
     skip_perm = ui.switch(
         "dangerously_skip_permissions",
@@ -356,6 +401,9 @@ def _build_claude_panel():
         ).props(INPUT_PROPS).classes("w-40")
 
     def save():
+        model = (selected_model["value"] or "").strip()
+        if model:
+            cfg.set_value(["claude", "model"], model)
         cfg.set_value(
             ["claude", "dangerously_skip_permissions"], skip_perm.value
         )
