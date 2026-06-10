@@ -3,11 +3,12 @@
 import logging
 from pathlib import Path
 
-from telegram import Update
-from telegram.ext import Application, ContextTypes
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import Application, CallbackQueryHandler, ContextTypes
 
 from ..base import Plugin
 from ...config import BASE_DIR, cfg
+from ...claude import FALLBACK_MODELS, fetch_models
 from ... import session
 from ...utils import owner_only
 
@@ -132,6 +133,55 @@ async def cmd_prompt(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(f"✅ System prompt set:\n\n{arg}")
 
 
+@owner_only
+async def cmd_model(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show current model or present a selection keyboard."""
+    assert update.message and update.effective_chat
+    chat_id = update.effective_chat.id
+
+    models, _ = fetch_models()
+    # Always include current model even if not in the fetched list.
+    current = cfg.get_chat_model(chat_id)
+    if current not in models:
+        models = [current] + models
+
+    buttons = []
+    for m in models:
+        label = f"✓ {m}" if m == current else m
+        buttons.append([InlineKeyboardButton(label, callback_data=f"model:{chat_id}:{m}")])
+    buttons.append([InlineKeyboardButton("↩ Reset to global default", callback_data=f"model:{chat_id}:__reset__")])
+
+    await update.message.reply_text(
+        f"🤖 <b>Model</b>\nCurrent: <code>{current}</code>\n\nPick a model for this chat:",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(buttons),
+    )
+
+
+async def _model_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle inline keyboard button presses for /model."""
+    query = update.callback_query
+    if not query or not query.data:
+        return
+    await query.answer()
+
+    parts = query.data.split(":", 2)
+    if len(parts) != 3 or parts[0] != "model":
+        return
+
+    target_chat_id = int(parts[1])
+    chosen = parts[2]
+
+    if chosen == "__reset__":
+        cfg.set_chat_model(target_chat_id, "")
+        label = f"global default ({cfg.claude_model})"
+    else:
+        cfg.set_chat_model(target_chat_id, chosen)
+        label = chosen
+
+    await query.edit_message_text(f"✅ Model set to <code>{label}</code>", parse_mode="HTML")
+
+
 # ── Plugin class ──────────────────────────────────────────────────────────────
 
 class ManagementPlugin(Plugin):
@@ -147,8 +197,11 @@ class ManagementPlugin(Plugin):
             "config": cmd_config,
             "admin": cmd_admin,
             "prompt": cmd_prompt,
+            "model": cmd_model,
         }.items():
             app.add_handler(self.command(cmd, fn))
+        # CallbackQueryHandler for model selection buttons (not a command).
+        app.add_handler(CallbackQueryHandler(_model_callback, pattern=r"^model:"))
 
     def get_commands(self) -> list[tuple[str, str]]:
         return [
@@ -158,6 +211,7 @@ class ManagementPlugin(Plugin):
             ("config", "Config summary"),
             ("admin", "Admin panel link"),
             ("prompt", "Set/view system prompt"),
+            ("model", "Set model for this chat"),
         ]
 
 
